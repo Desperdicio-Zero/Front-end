@@ -6,6 +6,8 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import {
   PantryItem,
   PantryItemCreate,
@@ -18,7 +20,17 @@ import {
   recordHistory,
   updateItem,
 } from '../services/api';
-import { scheduleExpiryNotifications, schedulePerItemNotifications } from '../services/notifications';
+
+const isExpoGoAndroid =
+  Platform.OS === 'android' && Constants.executionEnvironment === 'storeClient';
+
+async function scheduleInventoryNotifications(items: PantryItem[]): Promise<void> {
+  if (isExpoGoAndroid) return;
+
+  const { scheduleExpiryNotifications, schedulePerItemNotifications } = await import('../services/notifications');
+  await scheduleExpiryNotifications(items);
+  await schedulePerItemNotifications(items);
+}
 
 // ---------------------------------------------------------------------------
 // Tipos de retorno do hook
@@ -59,10 +71,8 @@ export function useInventory(): UseInventoryReturn {
       setError(null);
       const data = await fetchInventory();
       setItems(data);
-      // Resumo imediato (uma vez por sessão)
-      scheduleExpiryNotifications(data).catch(() => {});
-      // Re-agenda notificações por data de cada item
-      schedulePerItemNotifications(data).catch(() => {});
+      // Notificações são ignoradas no Expo Go Android (SDK 53+)
+      scheduleInventoryNotifications(data).catch(() => {});
     } catch {
       setError('Não foi possível carregar o inventário. Verifique a conexão.');
     } finally {

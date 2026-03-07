@@ -10,6 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+import LoginScreen from './src/screens/LoginScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import AddItemScreen from './src/screens/AddItemScreen';
 import ScannerScreen from './src/screens/ScannerScreen';
@@ -23,6 +24,7 @@ import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 // Tipagem do Stack Navigator (garante type-safety nas navegações)
 // ---------------------------------------------------------------------------
 export type RootStackParamList = {
+  Login: undefined;
   Dashboard: undefined;
   AddItem: { itemToEdit?: PantryItem; scanResult?: ScanResult };
   Scanner: undefined;
@@ -45,7 +47,7 @@ function AppNavigator() {
     <NavigationContainer theme={navTheme}>
       <StatusBar style={theme.isDark ? 'light' : 'dark'} />
       <Stack.Navigator
-        initialRouteName="Dashboard"
+        initialRouteName="Login"
         screenOptions={{
           headerStyle: { backgroundColor: theme.headerBg },
           headerTintColor: theme.green,
@@ -55,6 +57,11 @@ function AppNavigator() {
           animation: 'slide_from_right',
         }}
       >
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="Dashboard"
           component={DashboardScreen}
