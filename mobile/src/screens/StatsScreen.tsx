@@ -15,78 +15,19 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BarChart2, Leaf, TrendingDown, TrendingUp, Award } from 'lucide-react-native';
+import { PieChart, BarChart } from 'react-native-chart-kit';
+import LottieView from 'lottie-react-native';
 
 import { fetchStats, StatsResponse } from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
 import type { RootStackParamList } from '../../App';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Stats'>;
-
-// ---------------------------------------------------------------------------
-// Componente: Barra horizontal do gráfico
-// ---------------------------------------------------------------------------
-interface BarRowProps {
-  label: string;
-  value: number;
-  maxValue: number;
-  color: string;
-  bgColor: string;
-}
-
-const BarRow: React.FC<BarRowProps> = ({ label, value, maxValue, color, bgColor }) => {
-  const { theme } = useTheme();
-  const pct = maxValue > 0 ? (value / maxValue) * 100 : 0;
-  return (
-    <View style={barStyles.row}>
-      <Text style={[barStyles.label, { color: theme.text }]} numberOfLines={1}>{label}</Text>
-      <View style={[barStyles.track, { backgroundColor: theme.bgSecondary }]}>
-        <View
-          style={[
-            barStyles.fill,
-            { width: `${Math.max(pct, 2)}%` as any, backgroundColor: color },
-          ]}
-        />
-      </View>
-      <Text style={[barStyles.value, { color }]}>{value}</Text>
-    </View>
-  );
-};
-
-const barStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 10,
-  },
-  label: {
-    width: 110,
-    fontSize: 12,
-    color: '#374151',
-    fontWeight: '500',
-  },
-  track: {
-    flex: 1,
-    height: 12,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 6,
-    overflow: 'hidden',
-  },
-  fill: {
-    height: '100%',
-    borderRadius: 6,
-  },
-  value: {
-    width: 28,
-    fontSize: 12,
-    fontWeight: '700',
-    textAlign: 'right',
-  },
-});
 
 // ---------------------------------------------------------------------------
 // Componente: Card de métrica
@@ -206,7 +147,12 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
       {isEmpty ? (
         /* -- Empty state ----------------------------------------------------- */
         <View style={styles.emptyContainer}>
-          <Leaf size={64} color="#D1FAE5" strokeWidth={1.5} />
+          <LottieView
+            autoPlay
+            loop
+            source={{ uri: 'https://lottie.host/8c5d2b7d-e6a3-4b92-8086-4cfac552cba1/t0M9jWeGj9.json' }}
+            style={{ width: 150, height: 150 }}
+          />
           <Text style={[styles.emptyTitle, { color: theme.text }]}>Sem histórico ainda</Text>
           <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
             Quando você remover itens da despensa, as estatísticas de consumo e
@@ -301,43 +247,78 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
             />
           </View>
 
+          {/* ── Gráfico geral consumido vs. vencido ──────────────────────── */}
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Visão geral de Desperdício</Text>
+          <View style={[styles.chartCard, { backgroundColor: theme.card, borderColor: theme.border, alignItems: 'center', paddingVertical: 8 }]}>
+            <PieChart
+              data={[
+                {
+                  name: 'Consumidos',
+                  population: stats!.total_consumed,
+                  color: '#16A34A',
+                  legendFontColor: theme.text,
+                  legendFontSize: 13,
+                },
+                {
+                  name: 'Descartados',
+                  population: stats!.total_expired,
+                  color: '#EF4444',
+                  legendFontColor: theme.text,
+                  legendFontSize: 13,
+                },
+              ]}
+              width={Dimensions.get('window').width - 64}
+              height={160}
+              chartConfig={{
+                color: (opacity = 1) => theme.text,
+              }}
+              accessor={"population"}
+              backgroundColor={"transparent"}
+              paddingLeft={"15"}
+              center={[10, 0]}
+              absolute
+            />
+          </View>
+
           {/* ── Top categorias desperdiçadas ─────────────────────────────── */}
           {stats!.top_wasted_categories.length > 0 && (
             <>
               <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Categorias mais desperdiçadas</Text>
-              <View style={[styles.chartCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-                {stats!.top_wasted_categories.map((cat) => (
-                  <BarRow
-                    key={cat.category_name}
-                    label={cat.category_name}
-                    value={cat.total_expired}
-                    maxValue={stats!.top_wasted_categories[0]?.total_expired ?? 1}
-                    color="#EF4444"
-                    bgColor="#FFF1F2"
-                  />
-                ))}
+              <View style={[styles.chartCard, { backgroundColor: theme.card, borderColor: theme.border, paddingRight: 32 }]}>
+                <BarChart
+                  data={{
+                    labels: stats!.top_wasted_categories.slice(0, 3).map(c => c.category_name.substring(0, 8)),
+                    datasets: [{
+                      data: stats!.top_wasted_categories.slice(0, 3).map(c => c.total_expired)
+                    }]
+                  }}
+                  width={Dimensions.get('window').width - 64}
+                  height={220}
+                  yAxisLabel=""
+                  yAxisSuffix=" un"
+                  fromZero={true}
+                  chartConfig={{
+                    backgroundGradientFrom: theme.card,
+                    backgroundGradientTo: theme.card,
+                    fillShadowGradientFrom: '#EF4444',
+                    fillShadowGradientFromOpacity: 0.8,
+                    fillShadowGradientTo: '#EF4444',
+                    fillShadowGradientToOpacity: 0.8,
+                    color: (opacity = 1) => theme.isDark ? `rgba(239, 68, 68, ${opacity})` : `rgba(220, 38, 38, ${opacity})`,
+                    labelColor: (opacity = 1) => theme.textSecondary,
+                    strokeWidth: 2,
+                    barPercentage: 0.6,
+                    decimalPlaces: 0,
+                  }}
+                  style={{
+                    marginVertical: 8,
+                    borderRadius: 16
+                  }}
+                  showValuesOnTopOfBars={true}
+                />
               </View>
             </>
           )}
-
-          {/* ── Gráfico geral consumido vs. vencido ──────────────────────── */}
-          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Visão geral</Text>
-          <View style={[styles.chartCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <BarRow
-              label="✅ Consumidos"
-              value={stats!.total_consumed}
-              maxValue={stats!.total_removed}
-              color="#16A34A"
-              bgColor="#F0FDF4"
-            />
-            <BarRow
-              label="🗑️ Vencidos"
-              value={stats!.total_expired}
-              maxValue={stats!.total_removed}
-              color="#EF4444"
-              bgColor="#FFF1F2"
-            />
-          </View>
 
           <View style={{ height: 40 }} />
         </ScrollView>

@@ -108,7 +108,7 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue>({
   theme: LIGHT,
-  toggleTheme: () => {},
+  toggleTheme: () => { },
 });
 
 // ---------------------------------------------------------------------------
@@ -118,7 +118,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useColorScheme(); // 'light' | 'dark' | null
   const [forced, setForced] = useState<'light' | 'dark' | null>(null);
 
-  const effective = forced ?? systemScheme ?? 'light';
+  const effective = forced ?? 'light'; // padrão: sempre claro, independente do sistema
   const theme = effective === 'dark' ? DARK : LIGHT;
 
   const toggleTheme = useCallback(() => {

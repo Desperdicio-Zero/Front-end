@@ -18,7 +18,6 @@ import {
   recordHistory,
   updateItem,
 } from '../services/api';
-import { scheduleExpiryNotifications, schedulePerItemNotifications } from '../services/notifications';
 
 // ---------------------------------------------------------------------------
 // Tipos de retorno do hook
@@ -59,10 +58,6 @@ export function useInventory(): UseInventoryReturn {
       setError(null);
       const data = await fetchInventory();
       setItems(data);
-      // Resumo imediato (uma vez por sessão)
-      scheduleExpiryNotifications(data).catch(() => {});
-      // Re-agenda notificações por data de cada item
-      schedulePerItemNotifications(data).catch(() => {});
     } catch {
       setError('Não foi possível carregar o inventário. Verifique a conexão.');
     } finally {
@@ -112,13 +107,13 @@ export function useInventory(): UseInventoryReturn {
       try {
         // Registra no histórico antes de deletar
         await recordHistory({
-          item_name:      item.name,
-          category_name:  item.category.name,
-          quantity:       Number(item.quantity),
-          unit:           item.unit,
-          expiry_date:    item.expiry_date,
+          item_name: item.name,
+          category_name: item.category.name,
+          quantity: Number(item.quantity),
+          unit: item.unit,
+          expiry_date: item.expiry_date,
           removal_reason: reason,
-          notes:          item.notes ?? undefined,
+          notes: item.notes ?? undefined,
         });
         await deleteItem(id);
       } catch {

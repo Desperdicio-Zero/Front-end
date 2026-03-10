@@ -21,17 +21,21 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BarChart2, ChefHat, Leaf, Moon, Plus, RefreshCw, Sun } from 'lucide-react-native';
+import { BarChart2, ChefHat, Leaf, Moon, Plus, RefreshCw, Sun, Share2, LogOut } from 'lucide-react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as Haptics from 'expo-haptics';
+import LottieView from 'lottie-react-native';
 
 import ProductCard from '../components/ProductCard';
 import SwipeableCard from '../components/SwipeableCard';
 import MarkdownText from '../components/MarkdownText';
+import { SkeletonItem } from '../components/SkeletonItem';
 import { useInventory } from '../hooks/useInventory';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import type { PantryItem, RemovalReason, UrgencyStatus } from '../services/api';
 import type { RootStackParamList } from '../../App';
 
@@ -43,9 +47,9 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Dashboard'>;
 export type SortKey = 'urgency' | 'name' | 'expiry' | 'category';
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'urgency',  label: '🚨 Urgência' },
-  { key: 'name',     label: '🔤 Nome' },
-  { key: 'expiry',   label: '📅 Validade' },
+  { key: 'urgency', label: '🚨 Urgência' },
+  { key: 'name', label: '🔤 Nome' },
+  { key: 'expiry', label: '📅 Validade' },
   { key: 'category', label: '🏷️ Categoria' },
 ];
 
@@ -78,8 +82,8 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ label, count, color, bgColor 
 
   return (
     <View style={[styles.summaryCard, { backgroundColor: bgColor, borderColor: color }]}>
-      <Text style={[styles.summaryCount, { color }]}>{display}</Text>
-      <Text style={[styles.summaryLabel, { color }]}>{label}</Text>
+      <Text style={[styles.summaryCount, { color }]} numberOfLines={1} adjustsFontSizeToFit>{display}</Text>
+      <Text style={[styles.summaryLabel, { color }]} numberOfLines={1} adjustsFontSizeToFit>{label}</Text>
     </View>
   );
 };
@@ -125,6 +129,7 @@ const AnimatedCard: React.FC<AnimatedCardProps> = ({ children, index }) => {
 const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   const { items, loading, saving, error, refresh, removeItem, getRecipe } = useInventory();
   const { theme, toggleTheme } = useTheme();
+  const { signOut } = useAuth();
   const [recipeModalVisible, setRecipeModalVisible] = useState(false);
   const [recipeText, setRecipeText] = useState('');
   const [loadingRecipe, setLoadingRecipe] = useState(false);
@@ -133,6 +138,42 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'Todos' | UrgencyStatus>('Todos');
   const [sortBy, setSortBy] = useState<SortKey>('urgency');
+
+  // -- Efeito Loading Cíclico para IA ----------------------------------------
+  const FUN_LOADING_PHRASES = [
+    "👨‍🍳 Lavando as panelas...",
+    "📖 Consultando gigantes da culinária...",
+    "🥦 Calculando os macros vitais...",
+    "🔥 Misturando os temperos perfeitos...",
+    "🍝 Criando uma harmonia de sabores...",
+    "🍽️ Está quase pronto...",
+    "✨ O aroma digital está delicioso..."
+  ];
+  const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (loadingRecipe) {
+      interval = setInterval(() => {
+        setLoadingPhraseIndex((prev) => (prev + 1) % FUN_LOADING_PHRASES.length);
+      }, 2500);
+    } else {
+      setLoadingPhraseIndex(0);
+    }
+    return () => clearInterval(interval);
+  }, [loadingRecipe]);
+
+  // -- Função Nativa de Compartilhamento (OS Share API) ---------------------
+  const handleShareRecipe = async () => {
+    try {
+      await Share.share({
+        message: `*Receita Inteligente - Desperdício Zero* 🍽️✨\n\n${recipeText}`,
+        title: 'Receita do Desperdício Zero'
+      });
+    } catch (error) {
+      console.error("Erro ao compartilhar:", error);
+    }
+  };
 
   // -- Lista filtrada --------------------------------------------------------
   const filteredItems = items.filter((item) => {
@@ -179,9 +220,9 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   const handleDelete = async (id: number, item: PantryItem, reason: RemovalReason) => {
     try {
       await removeItem(id, item, reason);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
     } catch {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => { });
       Alert.alert('Erro', 'Não foi possível remover o item.');
     }
   };
@@ -228,9 +269,15 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   // -- Render ----------------------------------------------------------------
   if (loading) {
     return (
-      <SafeAreaView style={[styles.centered, { backgroundColor: theme.bg }]}>
-        <ActivityIndicator size="large" color={theme.green} />
-        <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Carregando inventário…</Text>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
+        <View style={styles.skeletonHeaderPlaceholder} />
+        <View style={styles.scroll}>
+          <SkeletonItem />
+          <SkeletonItem />
+          <SkeletonItem />
+          <SkeletonItem />
+          <SkeletonItem />
+        </View>
       </SafeAreaView>
     );
   }
@@ -255,6 +302,9 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
               ? <Sun size={20} color={theme.green} strokeWidth={2} />
               : <Moon size={20} color={theme.green} strokeWidth={2} />
             }
+          </TouchableOpacity>
+          <TouchableOpacity onPress={signOut} style={[styles.headerBtn, { backgroundColor: theme.greenBg }]}>
+            <LogOut size={20} color={theme.green} strokeWidth={2} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.navigate('Stats')}
@@ -295,60 +345,64 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
           returnKeyType="search"
         />
       </View>
-      <View style={styles.filterChipsRow}>
-        {(['Todos', 'Vermelho', 'Amarelo', 'Verde'] as const).map((status) => (
-          <TouchableOpacity
-            key={status}
-            style={[
-              styles.filterChip,
-              { backgroundColor: theme.chipBg, borderColor: theme.chipBorder },
-              filterStatus === status && styles.filterChipActive,
-              filterStatus === status && {
-                backgroundColor:
-                  status === 'Vermelho' ? '#EF4444'
-                  : status === 'Amarelo' ? '#EAB308'
-                  : status === 'Verde' ? '#22C55E'
-                  : theme.green,
-              },
-            ]}
-            onPress={() => setFilterStatus(status)}
-          >
-            <Text
+      <View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={styles.filterChipsRow}>
+          {(['Todos', 'Vermelho', 'Amarelo', 'Verde'] as const).map((status) => (
+            <TouchableOpacity
+              key={status}
               style={[
-                styles.filterChipText,
-                { color: theme.textSecondary },
-                filterStatus === status && styles.filterChipTextActive,
+                styles.filterChip,
+                { backgroundColor: theme.chipBg, borderColor: theme.chipBorder },
+                filterStatus === status && styles.filterChipActive,
+                filterStatus === status && {
+                  backgroundColor:
+                    status === 'Vermelho' ? '#EF4444'
+                      : status === 'Amarelo' ? '#EAB308'
+                        : status === 'Verde' ? '#22C55E'
+                          : theme.green,
+                },
               ]}
+              onPress={() => setFilterStatus(status)}
             >
-              {status === 'Todos' ? 'Todos' :
-               status === 'Vermelho' ? 'Urgente' :
-               status === 'Amarelo' ? 'Atenção' : 'Em dia'}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text
+                style={[
+                  styles.filterChipText,
+                  { color: theme.textSecondary },
+                  filterStatus === status && styles.filterChipTextActive,
+                ]}
+              >
+                {status === 'Todos' ? 'Todos' :
+                  status === 'Vermelho' ? 'Urgente' :
+                    status === 'Amarelo' ? 'Atenção' : 'Em dia'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
       {/* Ordenação */}
-      <View style={styles.sortRow}>
-        {SORT_OPTIONS.map((opt) => (
-          <TouchableOpacity
-            key={opt.key}
-            style={[
-              styles.sortChip,
-              { backgroundColor: theme.chipBg, borderColor: theme.chipBorder },
-              sortBy === opt.key && { backgroundColor: theme.green, borderColor: theme.green },
-            ]}
-            onPress={() => setSortBy(opt.key)}
-          >
-            <Text style={[
-              styles.sortChipText,
-              { color: theme.textSecondary },
-              sortBy === opt.key && { color: '#FFF' },
-            ]}>
-              {opt.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      <View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={styles.sortRow}>
+          {SORT_OPTIONS.map((opt) => (
+            <TouchableOpacity
+              key={opt.key}
+              style={[
+                styles.sortChip,
+                { backgroundColor: theme.chipBg, borderColor: theme.chipBorder },
+                sortBy === opt.key && { backgroundColor: theme.green, borderColor: theme.green },
+              ]}
+              onPress={() => setSortBy(opt.key)}
+            >
+              <Text style={[
+                styles.sortChipText,
+                { color: theme.textSecondary },
+                sortBy === opt.key && { color: '#FFF' },
+              ]}>
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
       {/* Botões de receita */}
@@ -417,8 +471,13 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Leaf size={56} color="#D1FAE5" strokeWidth={1.5} />
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>
+            <LottieView
+              autoPlay
+              loop
+              source={{ uri: 'https://lottie.host/8c5d2b7d-e6a3-4b92-8086-4cfac552cba1/t0M9jWeGj9.json' }}
+              style={{ width: 140, height: 140 }}
+            />
+            <Text style={[styles.emptyTitle, { color: theme.text, marginTop: -10 }]}>
               {searchQuery || filterStatus !== 'Todos' ? 'Nenhum resultado' : 'Despensa vazia'}
             </Text>
             <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
@@ -455,25 +514,36 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
             <ChefHat size={22} color={theme.green} strokeWidth={2} />
             <Text style={[styles.modalTitle, { color: theme.text }]}>
               {recipeMode === 'urgent' ? 'Receita Anti-Desperdício'
-               : recipeMode === 'all' ? 'Receita do Estoque'
-               : 'Receita com este produto'}
+                : recipeMode === 'all' ? 'Receita do Estoque'
+                  : 'Receita com este produto'}
             </Text>
-            <TouchableOpacity onPress={() => setRecipeModalVisible(false)}>
+            {!loadingRecipe && recipeText.length > 0 && (
+              <TouchableOpacity onPress={handleShareRecipe} style={styles.modalShareIcon}>
+                <Share2 size={20} color={theme.green} strokeWidth={2} />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={() => setRecipeModalVisible(false)} style={styles.modalCloseBtn}>
               <Text style={styles.modalClose}>Fechar</Text>
             </TouchableOpacity>
           </View>
 
           {loadingRecipe ? (
             <View style={[styles.centered, { backgroundColor: theme.modalBg }]}>
-              <ActivityIndicator size="large" color={theme.green} />
-              <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Gerando receita com IA…</Text>
-              <Text style={[styles.loadingText, { fontSize: 13, opacity: 0.6, marginTop: -4, color: theme.textSecondary }]}>
-                Isso pode levar até 30 segundos
+              <ActivityIndicator size={48} color={theme.green} />
+              <Text style={[styles.loadingTextAnim, { color: theme.green }]}>
+                {FUN_LOADING_PHRASES[loadingPhraseIndex]}
+              </Text>
+              <Text style={[styles.loadingText, { fontSize: 13, opacity: 0.6, marginTop: 4, color: theme.textSecondary }]}>
+                Nossa IA Gastronômica analisa nutrição (NOVA Group) e validades. Isso leva alguns segundos.
               </Text>
             </View>
           ) : (
             <ScrollView contentContainerStyle={styles.modalContent}>
               <MarkdownText content={recipeText} />
+              <TouchableOpacity style={[styles.shareBtnBig, { backgroundColor: theme.greenBg }]} onPress={handleShareRecipe}>
+                <Share2 size={20} color={theme.green} strokeWidth={2.5} />
+                <Text style={[styles.shareBtnTextBig, { color: theme.green }]}>Compartilhar Receita (WhatsApp)</Text>
+              </TouchableOpacity>
             </ScrollView>
           )}
         </SafeAreaView>
@@ -511,6 +581,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+  },
+  skeletonHeaderPlaceholder: {
+    height: 60,
+    width: '100%',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  scroll: {
+    padding: 16,
   },
   headerTitle: {
     fontSize: 22,
@@ -614,10 +693,10 @@ const styles = StyleSheet.create({
   },
   sortRow: {
     flexDirection: 'row',
-    gap: 6,
+    alignItems: 'center',
+    gap: 12,
     paddingHorizontal: 16,
     paddingBottom: 8,
-    flexWrap: 'nowrap',
   },
   sortChip: {
     paddingHorizontal: 10,
@@ -646,6 +725,7 @@ const styles = StyleSheet.create({
   },
   filterChipsRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -728,13 +808,42 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
+  modalCloseBtn: {
+    paddingLeft: 12,
+  },
+  modalShareIcon: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#F0FDF4',
+  },
   modalContent: {
     padding: 20,
+    paddingBottom: 60,
   },
   recipeText: {
     fontSize: 15,
     color: '#374151',
     lineHeight: 24,
+  },
+  loadingTextAnim: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 12,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  shareBtnBig: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 24,
+  },
+  shareBtnTextBig: {
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
 

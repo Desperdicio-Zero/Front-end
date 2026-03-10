@@ -52,13 +52,13 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ItemDetail'>;
 type Palette = { bg: string; border: string; badge: string; text: string; label: string };
 
 const URGENCY_LIGHT: Record<UrgencyStatus, Palette> = {
-  Verde:    { bg: '#F0FDF4', border: '#22C55E', badge: '#22C55E', text: '#15803D', label: 'Em dia' },
-  Amarelo:  { bg: '#FEFCE8', border: '#EAB308', badge: '#EAB308', text: '#A16207', label: 'Atenção' },
+  Verde: { bg: '#F0FDF4', border: '#22C55E', badge: '#22C55E', text: '#15803D', label: 'Em dia' },
+  Amarelo: { bg: '#FEFCE8', border: '#EAB308', badge: '#EAB308', text: '#A16207', label: 'Atenção' },
   Vermelho: { bg: '#FFF1F2', border: '#EF4444', badge: '#EF4444', text: '#B91C1C', label: 'Urgente' },
 };
 const URGENCY_DARK: Record<UrgencyStatus, Palette> = {
-  Verde:    { bg: '#14532D', border: '#22C55E', badge: '#16A34A', text: '#86EFAC', label: 'Em dia' },
-  Amarelo:  { bg: '#431A01', border: '#EAB308', badge: '#CA8A04', text: '#FDE047', label: 'Atenção' },
+  Verde: { bg: '#14532D', border: '#22C55E', badge: '#16A34A', text: '#86EFAC', label: 'Em dia' },
+  Amarelo: { bg: '#431A01', border: '#EAB308', badge: '#CA8A04', text: '#FDE047', label: 'Atenção' },
   Vermelho: { bg: '#450A0A', border: '#EF4444', badge: '#DC2626', text: '#FCA5A5', label: 'Urgente' },
 };
 
@@ -79,16 +79,16 @@ function formatDatetime(isoDatetime: string): string {
 
 const REASON_LABEL: Record<RemovalReason, string> = {
   consumed: '✅ Consumido',
-  expired:  '🗑 Venceu/Descartado',
-  donated:  '🤝 Doado',
-  other:    '📦 Outro',
+  expired: '🗑 Venceu/Descartado',
+  donated: '🤝 Doado',
+  other: '📦 Outro',
 };
 
 const REASON_COLOR: Record<RemovalReason, string> = {
   consumed: '#16A34A',
-  expired:  '#DC2626',
-  donated:  '#7C3AED',
-  other:    '#6B7280',
+  expired: '#DC2626',
+  donated: '#7C3AED',
+  other: '#6B7280',
 };
 
 // ---------------------------------------------------------------------------
@@ -128,7 +128,7 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const handleDelete = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => { });
     Alert.alert(
       'Como esse item foi removido?',
       `"${item.name}" — selecione o motivo:`,
@@ -139,7 +139,7 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           style: 'destructive',
           onPress: async () => {
             await removeItem(item.id, item, 'expired');
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
             navigation.goBack();
           },
         },
@@ -147,7 +147,7 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           text: '✅ Consumido',
           onPress: async () => {
             await removeItem(item.id, item, 'consumed');
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
             navigation.goBack();
           },
         },
@@ -172,7 +172,7 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   // -- Helpers de exibição de validade ----------------------------------------
   const expiryLabel = () => {
     const d = item.days_until_expiry;
-    if (d < 0)  return `Vencido há ${Math.abs(d)} dia(s)`;
+    if (d < 0) return `Vencido há ${Math.abs(d)} dia(s)`;
     if (d === 0) return 'Vence hoje!';
     if (d === 1) return 'Vence amanhã';
     return `Vence em ${d} dias`;

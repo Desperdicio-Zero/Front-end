@@ -27,8 +27,11 @@ import { useInventory } from '../hooks/useInventory';
 import { useTheme } from '../contexts/ThemeContext';
 import type { AppTheme } from '../contexts/ThemeContext';
 import type { RootStackParamList } from '../../App';
-import { fetchCategories } from '../services/api';
-import type { Category, PantryItemCreate, PantryItemUpdate } from '../services/api';
+import { fetchCategories, searchCatalog, guessCategory } from '../services/api';
+import PrimaryButton from '../components/PrimaryButton';
+import type { Category, PantryItemCreate, PantryItemUpdate, CatalogProductOut } from '../services/api';
+import * as Haptics from 'expo-haptics';
+import Toast from 'react-native-toast-message';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AddItem'>;
 
@@ -66,7 +69,7 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
   useEffect(() => {
     fetchCategories()
       .then(setCategories)
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoadingCategories(false));
   }, []);
 
@@ -79,6 +82,48 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
   const [unit, setUnit] = useState('unidade');
   const [notes, setNotes] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+
+  // -- Estado do Autocomplete (Catálogo) -------------------------------------
+  const [searchResults, setSearchResults] = useState<CatalogProductOut[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Efeito Debounce para Search DB Fast API
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (name.trim().length >= 2 && showSuggestions) {
+        setIsSearching(true);
+        try {
+          const results = await searchCatalog(name);
+          setSearchResults(results);
+        } catch (error) {
+          console.warn("Erro ao buscar catálogo: ", error);
+          setSearchResults([]);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setSearchResults([]);
+      }
+    }, 400); // 400ms de digit delay pra poupar ping no banco
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [name, showSuggestions]);
+
+  const handleSelectSuggestion = (product: CatalogProductOut) => {
+    setName(product.name);
+    if (product.quantity_normalized) {
+      setQuantity(String(product.quantity_normalized));
+    }
+    // Set categoria importada do CSV Banco através do Parser inteligente de Regex do OpenFoodFacts
+    if (product.category?.name) {
+      const guessedId = guessCategory([product.category.name]);
+      setCategoryId(guessedId);
+    } else {
+      setCategoryId(13); // "Outros" como standard fallback
+    }
+    setShowSuggestions(false); // Esconde a popup
+  };
 
   // Pré-preenche o formulário em modo edição
   useEffect(() => {
@@ -111,16 +156,19 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
   // -- Validação e submissão -------------------------------------------------
   const handleSubmit = async () => {
     if (!name.trim()) {
-      Alert.alert('Campo obrigatório', 'Informe o nome do produto.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => { });
+      Toast.show({ type: 'error', text1: 'Campo obrigatório', text2: 'Informe o nome do produto.' });
       return;
     }
     if (!useAutoExpiry && !parseDateInput(expiryInput)) {
-      Alert.alert('Data inválida', 'Use o formato DD/MM/AAAA.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => { });
+      Toast.show({ type: 'error', text1: 'Data inválida', text2: 'Use o formato DD/MM/AAAA.' });
       return;
     }
     const parsedQty = parseFloat(quantity.replace(',', '.'));
     if (isNaN(parsedQty) || parsedQty <= 0) {
-      Alert.alert('Quantidade inválida', 'Informe um número maior que zero.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => { });
+      Toast.show({ type: 'error', text1: 'Quantidade inválida', text2: 'Informe um número maior que zero.' });
       return;
     }
 
@@ -137,6 +185,8 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
           notes: notes.trim() || null,
         };
         await editItem(itemToEdit.id, payload);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
+        Toast.show({ type: 'success', text1: 'Item atualizado! ✅', text2: `${name.trim()} foi salvo com sucesso.` });
       } else {
         const payload: PantryItemCreate = {
           name: name.trim(),
@@ -147,10 +197,13 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
           notes: notes.trim() || null,
         };
         await addItem(payload);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
+        Toast.show({ type: 'success', text1: 'Item adicionado! 🎉', text2: `${name.trim()} está na sua despensa.` });
       }
       navigation.goBack();
     } catch {
-      Alert.alert('Erro', 'Não foi possível salvar o item. Tente novamente.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => { });
+      Toast.show({ type: 'error', text1: 'Erro ao salvar', text2: 'Verifique a conexão com o servidor.' });
     }
   };
 
@@ -169,14 +222,18 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
             {isEditing ? 'Editar Item' : 'Novo Item'}
           </Text>
 
-          {/* Campo: Nome */}
-          <View style={styles.fieldGroup}>
+          {/* Campo: Nome + Typeahead */}
+          <View style={[styles.fieldGroup, { zIndex: 50 }]}>
             <Text style={styles.label}>Nome do produto *</Text>
             <View style={styles.nameRow}>
               <TextInput
                 style={[styles.input, { flex: 1 }]}
                 value={name}
-                onChangeText={setName}
+                onChangeText={(text) => {
+                  setName(text);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
                 placeholder="Ex: Leite Integral"
                 placeholderTextColor={theme.textMuted}
                 maxLength={150}
@@ -190,6 +247,40 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
                 <ScanLine size={22} color="#16A34A" strokeWidth={2} />
               </TouchableOpacity>
             </View>
+
+            {/* Caixa Flutuante do Autocomplete */}
+            {name.length >= 2 && showSuggestions && (
+              <View
+                style={styles.autocompleteContainer}
+              >
+                {isSearching ? (
+                  <ActivityIndicator style={{ padding: 12 }} color="#16A34A" />
+                ) : searchResults.length > 0 ? (
+                  searchResults.map(result => (
+                    <TouchableOpacity
+                      key={result.ean}
+                      style={styles.suggestionItem}
+                      onPress={() => handleSelectSuggestion(result)}
+                    >
+                      <Text style={[styles.suggestionText, { color: theme.text }]} numberOfLines={1}>
+                        {result.name}
+                      </Text>
+                      {result.brand?.name && (
+                        <Text style={[styles.suggestionBrand, { color: theme.textMuted }]}>
+                          {result.brand.name}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  ))
+                ) : (
+                  <View style={styles.suggestionItem}>
+                    <Text style={[styles.suggestionText, { color: theme.textMuted, fontStyle: 'italic' }]}>
+                      Nenhum produto encontrado no catálogo.
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
 
           {/* Campo: Categoria */}
@@ -204,7 +295,9 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
             </TouchableOpacity>
 
             {showCategoryPicker && (
-              <View style={styles.pickerList}>
+              <View
+                style={styles.pickerList}
+              >
                 {loadingCategories ? (
                   <ActivityIndicator style={{ padding: 16 }} color="#16A34A" />
                 ) : null}
@@ -317,20 +410,12 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
             />
           </View>
 
-          {/* Botão de submissão */}
-          <TouchableOpacity
-            style={[styles.submitBtn, saving && styles.submitBtnDisabled]}
+          <PrimaryButton
+            label={isEditing ? 'Salvar Alterações' : 'Adicionar ao Inventário'}
             onPress={handleSubmit}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <Text style={styles.submitBtnText}>
-                {isEditing ? 'Salvar Alterações' : 'Adicionar ao Inventário'}
-              </Text>
-            )}
-          </TouchableOpacity>
+            loading={saving}
+            style={styles.submitBtn}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -442,6 +527,38 @@ function makeStyles(theme: AppTheme) {
       flexDirection: 'row',
       gap: 8,
       alignItems: 'center',
+    },
+    autocompleteContainer: {
+      position: 'absolute',
+      top: 75,
+      left: 0,
+      right: 56, // espaço do botão da câmera
+      maxHeight: 200,
+      backgroundColor: theme.card,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: theme.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 6,
+      elevation: 5,
+      zIndex: 999,
+      overflow: 'hidden',
+    },
+    suggestionItem: {
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.borderLight,
+    },
+    suggestionText: {
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    suggestionBrand: {
+      fontSize: 12,
+      marginTop: 2,
     },
     scanBtn: {
       width: 48,

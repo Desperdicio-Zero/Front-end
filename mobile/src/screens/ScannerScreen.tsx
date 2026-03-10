@@ -21,6 +21,7 @@ import { X, RefreshCw } from 'lucide-react-native';
 
 import { useTheme } from '../contexts/ThemeContext';
 import type { RootStackParamList } from '../../App';
+import { getCatalogItemByEan, guessCategory } from '../services/api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Scanner'>;
 
@@ -34,38 +35,12 @@ export interface ScanResult {
 }
 
 // ---------------------------------------------------------------------------
-// Mapeamento simplificado: tags da Open Food Facts → category_id local
-// ---------------------------------------------------------------------------
-const KEYWORD_TO_CATEGORY: [string, number][] = [
-  ['milk', 2], ['dairy', 2], ['cheese', 2], ['yogurt', 2], ['queijo', 2], ['leite', 2],
-  ['meat', 3], ['chicken', 3], ['beef', 3], ['pork', 3], ['carne', 3], ['frango', 3],
-  ['fish', 4], ['seafood', 4], ['peixe', 4], ['shrimp', 4],
-  ['cereal', 5], ['grain', 5], ['rice', 5], ['bean', 5], ['arroz', 5], ['feijao', 5],
-  ['pasta', 6], ['flour', 6], ['bread', 11], ['cake', 11], ['pao', 11], ['macarrao', 6],
-  ['canned', 7], ['conserva', 7],
-  ['beverage', 8], ['drink', 8], ['juice', 8], ['soda', 8], ['agua', 8], ['suco', 8],
-  ['spice', 9], ['condiment', 9], ['sauce', 9], ['tempero', 9], ['molho', 9],
-  ['frozen', 10], ['congelado', 10],
-  ['egg', 12], ['ovo', 12],
-];
-
-function guessCategory(tags: string[]): number {
-  const normalized = tags.map((t) =>
-    t.toLowerCase().replace(/[^a-z0-9]/g, '')
-  );
-  for (const [keyword, id] of KEYWORD_TO_CATEGORY) {
-    if (normalized.some((t) => t.includes(keyword))) return id;
-  }
-  return 13; // Outros
-}
-
-// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 const ScannerScreen: React.FC<Props> = ({ navigation }) => {
   const [permission, requestPermission] = useCameraPermissions();
-  const [scanned, setScanned]   = useState(false);
-  const [loading, setLoading]   = useState(false);
+  const [scanned, setScanned] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState('Aponte a câmera para o código de barras');
   const { theme } = useTheme();
 
@@ -73,27 +48,54 @@ const ScannerScreen: React.FC<Props> = ({ navigation }) => {
     if (scanned || loading) return;
     setScanned(true);
     setLoading(true);
-    setStatusMsg('Buscando produto…');
+    setStatusMsg('Buscando produto no banco central…');
+
+    let productName = '';
+    let categoryId = 13; // Outros por default
 
     try {
-      const res  = await fetch(`https://world.openfoodfacts.org/api/v0/product/${data}.json`);
-      const json = await res.json();
+      // 1ª Tentativa: Banco de Dados Próprio Desperdício Zero (Fast API Local MySQL)
+      const localProduct = await getCatalogItemByEan(data);
+      if (localProduct && localProduct.name) {
+        productName = localProduct.name;
+        // Assumindo que o DB já traduziu as keys (ou pega ID bruto)
+        if (localProduct.category?.id) categoryId = localProduct.category.id;
+        navigation.popTo('AddItem', { scanResult: { name: productName, categoryId, barcode: data } });
+        return;
+      }
+    } catch (err) {
+      // O Produto pode não estar no JSON do backend e dar 404. O erro é pego, seguiremos pro Fallback Open Food Facts
+      console.log("Não achou no MySQL, partindo para Internet Mundial...");
+    }
 
-      let productName = '';
-      let categoryId  = 13;
+    try {
+      // 2ª Tentativa FALLBACK: Rest World API Pública Open Food Facts
+      setStatusMsg('Tentando online na base mundial...');
+      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${data}.json`);
+      const json = await res.json();
 
       if (json.status === 1 && json.product) {
         productName = json.product.product_name_pt
           ?? json.product.product_name
           ?? '';
+        // Categoria inferida por Tags como na v1
         categoryId = guessCategory(json.product.categories_tags ?? []);
+        navigation.popTo('AddItem', { scanResult: { name: productName, categoryId, barcode: data } });
+      } else {
+        setStatusMsg('Produto não encontrado em nenhum Catálogo!');
+        setTimeout(() => {
+          setScanned(false);
+          setLoading(false);
+          setStatusMsg('Aponte a câmera para o código de barras');
+        }, 3000);
       }
-
-      navigation.popTo('AddItem', { scanResult: { name: productName, categoryId, barcode: data } });
     } catch {
-      setStatusMsg('Erro ao buscar produto. Tente novamente.');
-      setScanned(false);
-      setLoading(false);
+      setStatusMsg('Erro de conexão ao buscar produto.');
+      setTimeout(() => {
+        setScanned(false);
+        setLoading(false);
+        setStatusMsg('Aponte a câmera para o código de barras');
+      }, 3000);
     }
   };
 
