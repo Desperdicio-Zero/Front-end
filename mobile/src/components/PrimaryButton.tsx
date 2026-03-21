@@ -1,12 +1,14 @@
 /**
  * src/components/PrimaryButton.tsx
- * Botão primário padronizado com feedback de pressão (scale) e estado de loading.
- * Usado em todas as telas do app.
+ * Botão primário padronizado com feedback de pressão e estado de loading.
+ * Dark mode: texto #000 no sólido (contraste no verde vibrante).
+ * Light mode: texto #fff no sólido (contraste no verde escuro).
  */
 
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
+import * as Haptics from 'expo-haptics';
 
 interface PrimaryButtonProps {
     label: string;
@@ -26,22 +28,29 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
     style,
 }) => {
     const { theme } = useTheme();
-
     const isDisabled = disabled || loading;
+
+    // No dark mode, verde é #22C55E (claro) → texto preto para contraste.
+    // No light mode, verde é #16A34A (escuro) → texto branco para contraste.
+    const solidTextColor = theme.isDark ? '#000000' : '#FFFFFF';
+    // Glow localizado no escuro, sombra sutil no claro
+    const solidShadow = theme.isDark
+        ? { shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.55, shadowRadius: 14, elevation: 8 }
+        : { shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 5 };
 
     return (
         <Pressable
-            onPress={onPress}
+            onPress={(e) => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                onPress();
+            }}
             disabled={isDisabled}
             style={({ pressed }) => [
                 styles.base,
                 variant === 'solid' && {
                     backgroundColor: theme.green,
                     shadowColor: theme.green,
-                    shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: 0.35,
-                    shadowRadius: 10,
-                    elevation: 6,
+                    ...solidShadow,
                 },
                 variant === 'outline' && {
                     backgroundColor: 'transparent',
@@ -61,11 +70,12 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
             ]}
         >
             {loading ? (
-                <ActivityIndicator color={variant === 'solid' ? '#fff' : theme.green} />
+                <ActivityIndicator color={variant === 'solid' ? solidTextColor : theme.green} />
             ) : (
                 <Text style={[
                     styles.label,
-                    variant === 'solid' && { color: '#fff' },
+                    { fontFamily: theme.fonts?.medium },
+                    variant === 'solid' && { color: solidTextColor },
                     variant === 'outline' && { color: theme.green },
                     variant === 'ghost' && { color: theme.green },
                 ]}>
@@ -92,11 +102,11 @@ const styles = StyleSheet.create({
     },
     pressed: {
         transform: [{ scale: 0.97 }],
-        shadowOpacity: 0.12,
+        shadowOpacity: 0.15,
         elevation: 2,
     },
     disabled: {
-        opacity: 0.55,
+        opacity: 0.5,
     },
 });
 

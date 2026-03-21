@@ -11,6 +11,11 @@ import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { CheckCircle2, AlertCircle } from 'lucide-react-native';
+import { View, Text } from 'react-native';
+import { useFonts } from 'expo-font';
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { Outfit_600SemiBold, Outfit_700Bold, Outfit_800ExtraBold } from '@expo-google-fonts/outfit';
 
 import DashboardScreen from './src/screens/DashboardScreen';
 import AddItemScreen from './src/screens/AddItemScreen';
@@ -35,6 +40,7 @@ export type RootStackParamList = {
   Scanner: undefined;
   Stats: undefined;
   ItemDetail: { item: PantryItem };
+  Onboarding: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -95,6 +101,11 @@ function AppStack() {
           name="ItemDetail"
           component={ItemDetailScreen}
           options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Onboarding"
+          component={OnboardingScreen}
+          options={{ headerShown: false, presentation: 'fullScreenModal' }}
         />
       </Stack.Navigator>
     </>
@@ -174,12 +185,66 @@ function RootNavigator() {
 // App — entry point, sem lógica de onboarding (movida para RootNavigator)
 // ---------------------------------------------------------------------------
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Outfit_600SemiBold,
+    Outfit_700Bold,
+    Outfit_800ExtraBold,
+  });
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
     <SafeAreaProvider>
       <AuthProvider>
         <ThemeProvider>
           <RootNavigator />
-          <Toast />
+          <Toast
+            config={{
+              success: ({ text1, text2 }) => (
+                <View style={{
+                  flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(10, 15, 25, 0.95)',
+                  paddingHorizontal: 16, paddingVertical: 12, borderRadius: 40,
+                  borderWidth: 1, borderColor: 'rgba(34, 197, 94, 0.4)',
+                  shadowColor: '#22C55E', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 10,
+                  marginTop: 10, maxWidth: '90%',
+                }}>
+                  <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(34, 197, 94, 0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                    <CheckCircle2 size={18} color="#4ADE80" strokeWidth={2.5} />
+                  </View>
+                  <View style={{ flexShrink: 1 }}>
+                    {text1 && <Text style={{ color: '#F0FDF4', fontSize: 14, fontWeight: '700' }}>{text1}</Text>}
+                    {text2 && <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: 2 }}>{text2}</Text>}
+                  </View>
+                </View>
+              ),
+              error: ({ text1, text2 }) => (
+                <View style={{
+                  flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(10, 15, 25, 0.95)',
+                  paddingHorizontal: 16, paddingVertical: 12, borderRadius: 40,
+                  borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.4)',
+                  shadowColor: '#EF4444', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 10,
+                  marginTop: 10, maxWidth: '90%',
+                }}>
+                  <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(239, 68, 68, 0.15)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                    <AlertCircle size={18} color="#F87171" strokeWidth={2.5} />
+                  </View>
+                  <View style={{ flexShrink: 1 }}>
+                    {text1 && <Text style={{ color: '#FEF2F2', fontSize: 14, fontWeight: '700' }}>{text1}</Text>}
+                    {text2 && <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: 2 }}>{text2}</Text>}
+                  </View>
+                </View>
+              ),
+            }}
+            topOffset={55}
+            visibilityTime={3500}
+            autoHide={true}
+          />
         </ThemeProvider>
       </AuthProvider>
     </SafeAreaProvider>

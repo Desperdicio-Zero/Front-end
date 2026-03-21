@@ -6,7 +6,7 @@
  * contadores de resumo e acesso rápido à geração de receitas.
  */
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -24,7 +24,7 @@ import {
   Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BarChart2, ChefHat, Leaf, Moon, Plus, RefreshCw, Sun, Share2, LogOut } from 'lucide-react-native';
+import { BarChart2, ChefHat, Leaf, Moon, Plus, RefreshCw, Sun, Share2, LogOut, MoreVertical, HelpCircle, ChevronRight, AlertTriangle, Type, CalendarClock, Tag, Clock, CheckCircle2 } from 'lucide-react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as Haptics from 'expo-haptics';
 import LottieView from 'lottie-react-native';
@@ -46,11 +46,11 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Dashboard'>;
 // ---------------------------------------------------------------------------
 export type SortKey = 'urgency' | 'name' | 'expiry' | 'category';
 
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'urgency', label: '🚨 Urgência' },
-  { key: 'name', label: '🔤 Nome' },
-  { key: 'expiry', label: '📅 Validade' },
-  { key: 'category', label: '🏷️ Categoria' },
+const SORT_OPTIONS: { key: SortKey; label: string; icon: any }[] = [
+  { key: 'urgency', label: 'Urgência', icon: AlertTriangle },
+  { key: 'name', label: 'Nome', icon: Type },
+  { key: 'expiry', label: 'Validade', icon: CalendarClock },
+  { key: 'category', label: 'Categoria', icon: Tag },
 ];
 
 const URGENCY_ORDER: Record<string, number> = { Vermelho: 0, Amarelo: 1, Verde: 2 };
@@ -102,10 +102,10 @@ const AnimatedCard: React.FC<AnimatedCardProps> = ({ children, index }) => {
   useEffect(() => {
     Animated.timing(anim, {
       toValue: 1,
-      duration: 320,
-      delay: Math.min(index * 55, 400),
+      duration: 380,
+      delay: Math.min(index * 45, 300),
       useNativeDriver: true,
-      easing: Easing.out(Easing.cubic),
+      easing: Easing.bezier(0.25, 1, 0.5, 1), // Curva Deceleration suave premium
     }).start();
   }, []);
 
@@ -138,16 +138,17 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'Todos' | UrgencyStatus>('Todos');
   const [sortBy, setSortBy] = useState<SortKey>('urgency');
+  const [isMenuVisible, setMenuVisible] = useState(false);
 
   // -- Efeito Loading Cíclico para IA ----------------------------------------
   const FUN_LOADING_PHRASES = [
-    "👨‍🍳 Lavando as panelas...",
-    "📖 Consultando gigantes da culinária...",
-    "🥦 Calculando os macros vitais...",
-    "🔥 Misturando os temperos perfeitos...",
-    "🍝 Criando uma harmonia de sabores...",
-    "🍽️ Está quase pronto...",
-    "✨ O aroma digital está delicioso..."
+    "Lavando as panelas...",
+    "Consultando os mestres da culinária...",
+    "Calculando o valor nutricional...",
+    "Misturando os temperos perfeitos...",
+    "Criando uma harmonia de sabores...",
+    "Está quase pronto...",
+    "O aroma digital está delicioso..."
   ];
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
 
@@ -163,24 +164,15 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
     return () => clearInterval(interval);
   }, [loadingRecipe]);
 
-  // -- Função Nativa de Compartilhamento (OS Share API) ---------------------
-  const handleShareRecipe = async () => {
-    try {
-      await Share.share({
-        message: `*Receita Inteligente - Desperdício Zero* 🍽️✨\n\n${recipeText}`,
-        title: 'Receita do Desperdício Zero'
-      });
-    } catch (error) {
-      console.error("Erro ao compartilhar:", error);
-    }
-  };
-
   // -- Lista filtrada --------------------------------------------------------
-  const filteredItems = items.filter((item) => {
-    const matchSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchFilter = filterStatus === 'Todos' || item.status_urgencia === filterStatus;
-    return matchSearch && matchFilter;
-  });
+  const filteredItems = useMemo(() =>
+    items.filter((item) => {
+      const matchSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchFilter = filterStatus === 'Todos' || item.status_urgencia === filterStatus;
+      return matchSearch && matchFilter;
+    }),
+    [items, searchQuery, filterStatus]
+  );
 
   // -- Ordenação customizada -------------------------------------------------
   const sortedItems = useMemo(() => {
@@ -206,18 +198,18 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   const yellowCount = items.filter((i) => i.status_urgencia === 'Amarelo').length;
   const greenCount = items.filter((i) => i.status_urgencia === 'Verde').length;
 
-  // -- Handlers --------------------------------------------------------------
-  const handleRefresh = async () => {
+  // -- Handlers (memoizados para não re-criar a cada render) ----------------
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await refresh();
     setRefreshing(false);
-  };
+  }, [refresh]);
 
-  const handleEdit = (item: PantryItem) => {
+  const handleEdit = useCallback((item: PantryItem) => {
     navigation.navigate('AddItem', { itemToEdit: item });
-  };
+  }, [navigation]);
 
-  const handleDelete = async (id: number, item: PantryItem, reason: RemovalReason) => {
+  const handleDelete = useCallback(async (id: number, item: PantryItem, reason: RemovalReason) => {
     try {
       await removeItem(id, item, reason);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
@@ -225,16 +217,14 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => { });
       Alert.alert('Erro', 'Não foi possível remover o item.');
     }
-  };
+  }, [removeItem]);
 
-  const handleRecipeFromItem = async (item: PantryItem) => {
-    // Monta lista: o produto clicado + outros itens de suporte (verde/amarelo)
+  const handleRecipeFromItem = useCallback(async (item: PantryItem) => {
     const supporting = items
       .filter((i) => i.id !== item.id && i.status_urgencia !== 'Vermelho')
       .slice(0, 4)
       .map((i) => i.name);
     const products = [item.name, ...supporting];
-
     setRecipeMode('item');
     setLoadingRecipe(true);
     setRecipeModalVisible(true);
@@ -246,13 +236,12 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
     } finally {
       setLoadingRecipe(false);
     }
-  };
+  }, [items, getRecipe]);
 
-  const handleGenerateRecipe = async (mode: 'urgent' | 'all') => {
+  const handleGenerateRecipe = useCallback(async (mode: 'urgent' | 'all') => {
     const products = mode === 'urgent'
       ? items.filter((i) => i.status_urgencia === 'Vermelho').map((i) => i.name)
       : items.map((i) => i.name);
-
     setRecipeMode(mode);
     setLoadingRecipe(true);
     setRecipeModalVisible(true);
@@ -264,7 +253,18 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
     } finally {
       setLoadingRecipe(false);
     }
-  };
+  }, [items, getRecipe]);
+
+  const handleShareRecipe = useCallback(async () => {
+    try {
+      await Share.share({
+        message: `*Receita Inteligente - Desperdício Zero*\n\n${recipeText}`,
+        title: 'Receita do Desperdício Zero'
+      });
+    } catch (error) {
+      console.error('Erro ao compartilhar:', error);
+    }
+  }, [recipeText]);
 
   // -- Render ----------------------------------------------------------------
   if (loading) {
@@ -287,34 +287,18 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.headerBg, borderBottomColor: theme.border }]}>
         <View>
-          <Text style={[styles.headerTitle, { color: theme.green }]}>Desperdício Zero</Text>
-          <Text style={[styles.headerSubtitle, { color: theme.textMuted }]}>
+          <Text style={[styles.headerTitle, { color: theme.green, fontFamily: theme.fonts.heading }]}>Desperdício Zero</Text>
+          <Text style={[styles.headerSubtitle, { color: theme.textMuted, fontFamily: theme.fonts.medium }]}>
             {filteredItems.length} de {items.length} {items.length === 1 ? 'item' : 'itens'}
           </Text>
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity
-            onPress={toggleTheme}
+            onPress={() => setMenuVisible(true)}
             style={[styles.headerBtn, { backgroundColor: theme.greenBg }]}
-            accessibilityLabel="Alternar tema"
+            accessibilityLabel="Abrir menu de opções"
           >
-            {theme.isDark
-              ? <Sun size={20} color={theme.green} strokeWidth={2} />
-              : <Moon size={20} color={theme.green} strokeWidth={2} />
-            }
-          </TouchableOpacity>
-          <TouchableOpacity onPress={signOut} style={[styles.headerBtn, { backgroundColor: theme.greenBg }]}>
-            <LogOut size={20} color={theme.green} strokeWidth={2} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Stats')}
-            style={[styles.headerBtn, { backgroundColor: theme.greenBg }]}
-            accessibilityLabel="Ver relatório de desperdício"
-          >
-            <BarChart2 size={20} color={theme.green} strokeWidth={2} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleRefresh} style={[styles.headerBtn, { backgroundColor: theme.greenBg }]}>
-            <RefreshCw size={20} color={theme.green} strokeWidth={2} />
+            <MoreVertical size={20} color={theme.green} strokeWidth={2.5} />
           </TouchableOpacity>
         </View>
       </View>
@@ -348,34 +332,41 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
       <View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={styles.filterChipsRow}>
           {(['Todos', 'Vermelho', 'Amarelo', 'Verde'] as const).map((status) => (
-            <TouchableOpacity
-              key={status}
-              style={[
-                styles.filterChip,
-                { backgroundColor: theme.chipBg, borderColor: theme.chipBorder },
-                filterStatus === status && styles.filterChipActive,
-                filterStatus === status && {
-                  backgroundColor:
-                    status === 'Vermelho' ? '#EF4444'
-                      : status === 'Amarelo' ? '#EAB308'
-                        : status === 'Verde' ? '#22C55E'
-                          : theme.green,
-                },
-              ]}
-              onPress={() => setFilterStatus(status)}
-            >
-              <Text
+              <TouchableOpacity
+                key={status}
                 style={[
-                  styles.filterChipText,
-                  { color: theme.textSecondary },
-                  filterStatus === status && styles.filterChipTextActive,
+                  styles.filterChip,
+                  { backgroundColor: theme.chipBg, borderColor: theme.chipBorder, flexDirection: 'row', alignItems: 'center', gap: 6 },
+                  filterStatus === status && styles.filterChipActive,
+                  filterStatus === status && {
+                    backgroundColor:
+                      status === 'Vermelho' ? '#EF4444'
+                        : status === 'Amarelo' ? '#EAB308'
+                          : status === 'Verde' ? '#22C55E'
+                            : theme.green,
+                  },
                 ]}
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => {});
+                  setFilterStatus(status as typeof filterStatus);
+                }}
               >
-                {status === 'Todos' ? 'Todos' :
-                  status === 'Vermelho' ? 'Urgente' :
-                    status === 'Amarelo' ? 'Atenção' : 'Em dia'}
-              </Text>
-            </TouchableOpacity>
+                {status === 'Vermelho' ? <AlertTriangle size={14} color={filterStatus === status ? '#FFF' : theme.textSecondary} /> : null}
+                {status === 'Amarelo' ? <Clock size={14} color={filterStatus === status ? '#FFF' : theme.textSecondary} /> : null}
+                {status === 'Verde' ? <CheckCircle2 size={14} color={filterStatus === status ? '#FFF' : theme.textSecondary} /> : null}
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    { color: theme.textSecondary, fontFamily: theme.fonts?.medium },
+                    filterStatus === status && styles.filterChipTextActive,
+                    filterStatus === status && { color: '#FFF' },
+                  ]}
+                >
+                  {status === 'Todos' ? 'Todos' :
+                    status === 'Vermelho' ? 'Urgente' :
+                      status === 'Amarelo' ? 'Atenção' : 'Em dia'}
+                </Text>
+              </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
@@ -383,25 +374,32 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
       {/* Ordenação */}
       <View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={styles.sortRow}>
-          {SORT_OPTIONS.map((opt) => (
-            <TouchableOpacity
-              key={opt.key}
-              style={[
-                styles.sortChip,
-                { backgroundColor: theme.chipBg, borderColor: theme.chipBorder },
-                sortBy === opt.key && { backgroundColor: theme.green, borderColor: theme.green },
-              ]}
-              onPress={() => setSortBy(opt.key)}
-            >
+          {SORT_OPTIONS.map((opt) => {
+            const Icon = opt.icon;
+            const isActive = sortBy === opt.key;
+            return (
+              <TouchableOpacity
+                key={opt.key}
+                style={[
+                  styles.sortChip,
+                  { backgroundColor: theme.chipBg, borderColor: theme.chipBorder, flexDirection: 'row', alignItems: 'center', gap: 6 },
+                  isActive && { backgroundColor: theme.green, borderColor: theme.green },
+                ]}
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => {});
+                  setSortBy(opt.key);
+                }}
+              >
+                <Icon size={14} color={isActive ? '#FFF' : theme.textSecondary} strokeWidth={2.5} />
               <Text style={[
                 styles.sortChipText,
                 { color: theme.textSecondary },
-                sortBy === opt.key && { color: '#FFF' },
+                isActive && { color: '#FFF' },
               ]}>
                 {opt.label}
               </Text>
             </TouchableOpacity>
-          ))}
+          )})}
         </ScrollView>
       </View>
 
@@ -445,8 +443,8 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
                   `"${item.name}" — selecione o motivo:`,
                   [
                     { text: 'Cancelar', style: 'cancel' },
-                    { text: '🗑 Venceu/Descartado', style: 'destructive', onPress: () => handleDelete(item.id, item, 'expired') },
-                    { text: '✅ Consumido', onPress: () => handleDelete(item.id, item, 'consumed') },
+                    { text: 'Venceu/Descartado', style: 'destructive', onPress: () => handleDelete(item.id, item, 'expired') },
+                    { text: 'Consumido', onPress: () => handleDelete(item.id, item, 'consumed') },
                   ]
                 );
               }}
@@ -465,27 +463,36 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={['#16A34A']}
-            tintColor="#16A34A"
+            colors={['#22C55E']}
+            tintColor="#22C55E"
+            progressBackgroundColor="#0F1923"
           />
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <LottieView
-              autoPlay
-              loop
-              source={{ uri: 'https://lottie.host/8c5d2b7d-e6a3-4b92-8086-4cfac552cba1/t0M9jWeGj9.json' }}
-              style={{ width: 140, height: 140 }}
-            />
-            <Text style={[styles.emptyTitle, { color: theme.text, marginTop: -10 }]}>
-              {searchQuery || filterStatus !== 'Todos' ? 'Nenhum resultado' : 'Despensa vazia'}
-            </Text>
-            <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
-              {searchQuery || filterStatus !== 'Todos'
-                ? 'Tente outra busca ou remova o filtro.'
-                : 'Adicione seus primeiros itens tocando no botão +'}
-            </Text>
-          </View>
+          loading ? (
+            <View style={{ padding: 4, width: '100%', marginTop: 10 }}>
+              <SkeletonItem />
+              <SkeletonItem />
+              <SkeletonItem />
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <LottieView
+                autoPlay
+                loop
+                source={{ uri: 'https://lottie.host/8c5d2b7d-e6a3-4b92-8086-4cfac552cba1/t0M9jWeGj9.json' }}
+                style={{ width: 140, height: 140 }}
+              />
+              <Text style={[styles.emptyTitle, { color: theme.text, marginTop: -10 }]}>
+                {searchQuery || filterStatus !== 'Todos' ? 'Nenhum resultado' : 'Despensa vazia'}
+              </Text>
+              <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
+                {searchQuery || filterStatus !== 'Todos'
+                  ? 'Tente outra busca ou remova o filtro.'
+                  : 'Adicione seus primeiros itens tocando no botão +'}
+              </Text>
+            </View>
+          )
         }
         contentContainerStyle={
           filteredItems.length === 0 ? styles.listEmpty : styles.listContent
@@ -497,9 +504,10 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
       <TouchableOpacity
         style={styles.fab}
         onPress={() => navigation.navigate('AddItem', {})}
-        accessibilityLabel="Adicionar novo item"
+        accessibilityLabel="Adicionar novo item ao inventário"
+        accessibilityRole="button"
       >
-        <Plus size={28} color="#FFF" strokeWidth={2.5} />
+        <Plus size={28} color="#000" strokeWidth={2.5} />
       </TouchableOpacity>
 
       {/* Modal de Receita */}
@@ -548,6 +556,91 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
           )}
         </SafeAreaView>
       </Modal>
+
+      {/* Bottom Sheet Modal de Menu */}
+      <Modal
+        visible={isMenuVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={StyleSheet.absoluteFillObject} 
+            onPress={() => setMenuVisible(false)} 
+            activeOpacity={1}
+          />
+          <View style={[styles.bottomSheet, { backgroundColor: theme.bg, borderColor: theme.border }]}>
+            <View style={[styles.bottomSheetHandle, { backgroundColor: theme.border }]} />
+            
+            <Text style={[styles.bottomSheetTitle, { color: theme.text }]}>Opções</Text>
+            
+            <TouchableOpacity 
+              style={styles.bottomSheetItem}
+              onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('Stats');
+              }}
+            >
+              <View style={[styles.bottomSheetIconWrap, { backgroundColor: theme.greenBg }]}>
+                <BarChart2 size={20} color={theme.green} />
+              </View>
+              <Text style={[styles.bottomSheetItemText, { color: theme.text }]}>Relatório de Desperdício</Text>
+              <ChevronRight size={16} color={theme.textMuted} />
+            </TouchableOpacity>
+
+            <View style={[styles.bottomSheetDivider, { backgroundColor: theme.border }]} />
+
+            <TouchableOpacity 
+              style={styles.bottomSheetItem}
+              onPress={() => {
+                toggleTheme();
+              }}
+            >
+              <View style={[styles.bottomSheetIconWrap, { backgroundColor: theme.inputBg }]}>
+                {theme.isDark 
+                  ? <Sun size={20} color={theme.text} /> 
+                  : <Moon size={20} color={theme.text} />}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.bottomSheetItemText, { color: theme.text }]}>Aparência</Text>
+                <Text style={[styles.bottomSheetItemSub, { color: theme.textSecondary }]}>Modo {theme.isDark ? 'Escuro' : 'Claro'}</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.bottomSheetItem}
+              onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('Onboarding');
+              }}
+            >
+              <View style={[styles.bottomSheetIconWrap, { backgroundColor: theme.inputBg }]}>
+                <HelpCircle size={20} color={theme.text} />
+              </View>
+              <Text style={[styles.bottomSheetItemText, { color: theme.text }]}>Como usar o app</Text>
+            </TouchableOpacity>
+
+            <View style={[styles.bottomSheetDivider, { backgroundColor: theme.border }]} />
+
+            <TouchableOpacity 
+              style={styles.bottomSheetItem}
+              onPress={() => {
+                setMenuVisible(false);
+                signOut();
+              }}
+            >
+              <View style={[styles.bottomSheetIconWrap, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}>
+                <LogOut size={20} color="#EF4444" />
+              </View>
+              <Text style={[styles.bottomSheetItemText, { color: '#EF4444' }]}>Sair da Conta</Text>
+            </TouchableOpacity>
+            
+            <View style={{ height: 30 }} />
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 };
@@ -558,17 +651,17 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#060A10',
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#060A10',
     gap: 12,
   },
   loadingText: {
-    color: '#6B7280',
+    color: 'rgba(255,255,255,0.45)',
     fontSize: 14,
   },
   header: {
@@ -578,15 +671,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 12,
-    backgroundColor: '#FFF',
+    backgroundColor: '#060A10',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: 'rgba(255,255,255,0.07)',
   },
   skeletonHeaderPlaceholder: {
     height: 60,
     width: '100%',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: 'rgba(255,255,255,0.07)',
   },
   scroll: {
     padding: 16,
@@ -594,18 +687,21 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#15803D',
+    color: '#22C55E',
     letterSpacing: -0.5,
+    textShadowColor: 'rgba(34,197,94,0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: 'rgba(255,255,255,0.3)',
     marginTop: 2,
   },
   refreshBtn: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: 'rgba(34,197,94,0.1)',
   },
   headerActions: {
     flexDirection: 'row',
@@ -614,15 +710,19 @@ const styles = StyleSheet.create({
   headerBtn: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: 'rgba(34,197,94,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(34,197,94,0.2)',
   },
   errorBanner: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: 'rgba(239,68,68,0.12)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(239,68,68,0.25)',
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   errorText: {
-    color: '#B91C1C',
+    color: '#FCA5A5',
     fontSize: 13,
     textAlign: 'center',
   },
@@ -635,9 +735,10 @@ const styles = StyleSheet.create({
   summaryCard: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1.5,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    backgroundColor: '#0F1923',
   },
   summaryCount: {
     fontSize: 24,
@@ -647,6 +748,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   recipeBtnsRow: {
     flexDirection: 'row',
@@ -660,21 +763,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 11,
+    paddingVertical: 12,
     borderRadius: 12,
   },
   recipeBtnUrgent: {
     backgroundColor: '#DC2626',
-    shadowColor: '#DC2626',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 6,
   },
   recipeBtnAll: {
-    backgroundColor: '#F0FDF4',
+    backgroundColor: 'rgba(34,197,94,0.1)',
     borderWidth: 1.5,
-    borderColor: '#86EFAC',
+    borderColor: 'rgba(34,197,94,0.35)',
   },
   recipeBtnText: {
     color: '#FFF',
@@ -682,7 +785,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   recipeBtnTextAll: {
-    color: '#16A34A',
+    color: '#22C55E',
   },
   listContent: {
     paddingBottom: 100,
@@ -702,7 +805,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 16,
-    borderWidth: 1.5,
+    borderWidth: 1,
   },
   sortChipText: {
     fontSize: 11,
@@ -714,14 +817,14 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   searchInput: {
-    backgroundColor: '#FFF',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 10,
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 11,
     fontSize: 14,
-    color: '#111827',
+    color: '#F0FDF4',
   },
   filterChipsRow: {
     flexDirection: 'row',
@@ -734,9 +837,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
   },
   filterChipActive: {
     borderColor: 'transparent',
@@ -744,7 +847,7 @@ const styles = StyleSheet.create({
   filterChipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B7280',
+    color: 'rgba(255,255,255,0.45)',
   },
   filterChipTextActive: {
     color: '#FFF',
@@ -759,11 +862,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#374151',
+    color: '#F0FDF4',
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#9CA3AF',
+    color: 'rgba(255,255,255,0.35)',
     textAlign: 'center',
     paddingHorizontal: 40,
   },
@@ -771,22 +874,22 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     bottom: 30,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#16A34A',
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    backgroundColor: '#22C55E',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#16A34A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 16,
+    elevation: 10,
   },
   // Modal
   modalContainer: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: '#080D14',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -795,16 +898,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   modalTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#111827',
+    color: '#F0FDF4',
     flex: 1,
   },
   modalClose: {
-    color: '#3B82F6',
+    color: '#22C55E',
     fontSize: 15,
     fontWeight: '600',
   },
@@ -814,7 +917,7 @@ const styles = StyleSheet.create({
   modalShareIcon: {
     padding: 6,
     borderRadius: 8,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: 'rgba(34,197,94,0.12)',
   },
   modalContent: {
     padding: 20,
@@ -822,7 +925,7 @@ const styles = StyleSheet.create({
   },
   recipeText: {
     fontSize: 15,
-    color: '#374151',
+    color: 'rgba(255,255,255,0.7)',
     lineHeight: 24,
   },
   loadingTextAnim: {
@@ -844,6 +947,62 @@ const styles = StyleSheet.create({
   shareBtnTextBig: {
     fontSize: 16,
     fontWeight: '700',
+  },
+  // Modal Bottom Sheet Styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  bottomSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 20,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+  },
+  bottomSheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  bottomSheetTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+    marginLeft: 4,
+  },
+  bottomSheetItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  bottomSheetIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  bottomSheetItemText: {
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+  },
+  bottomSheetItemSub: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  bottomSheetDivider: {
+    height: 1,
+    marginVertical: 8,
+    marginHorizontal: 4,
   },
 });
 

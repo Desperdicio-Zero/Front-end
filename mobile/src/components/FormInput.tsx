@@ -1,10 +1,10 @@
 /**
  * src/components/FormInput.tsx
- * Input padronizado com: borda de foco, ícone de validação, toggle de senha.
- * Usado em todas as telas do app.
+ * Input padronizado — theme-aware (Dark OLED + Light Premium).
+ * Fix iOS keyboard flicker e Floating Label Pro Max.
  */
 
-import React, { useState } from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 import {
     StyleSheet,
     Text,
@@ -12,9 +12,11 @@ import {
     TextInputProps,
     TouchableOpacity,
     View,
+    Animated,
 } from 'react-native';
 import { AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react-native';
 import { useTheme } from '../contexts/ThemeContext';
+import * as Haptics from 'expo-haptics';
 
 interface FormInputProps extends TextInputProps {
     label: string;
@@ -32,57 +34,138 @@ const FormInput: React.FC<FormInputProps> = ({
     ...rest
 }) => {
     const { theme } = useTheme();
-    const [focused, setFocused] = useState(false);
-    const [passwordVisible, setPasswordVisible] = useState(false);
+    const [passwordVisible, setPasswordVisible] = React.useState(false);
+    const [isFocused, setIsFocused] = React.useState(false);
 
+    // ── KEY FIX: Animated.Value para foco e Floating Label
+    const borderAnim = useRef(new Animated.Value(0)).current;
+    
+    // Convertemos null/undefined em boolean confiavel
+    const hasValue = rest.value !== undefined && rest.value !== null && rest.value.length > 0;
+    const floatAnim = useRef(new Animated.Value(hasValue ? 1 : 0)).current;
     const showError = !!error;
+
+    useEffect(() => {
+        Animated.timing(floatAnim, {
+            toValue: (isFocused || hasValue) ? 1 : 0,
+            duration: 180,
+            useNativeDriver: false,
+        }).start();
+    }, [isFocused, hasValue, floatAnim]);
+
+    const handleFocus = useCallback((e: any) => {
+        setIsFocused(true);
+        Haptics.selectionAsync().catch(() => {});
+        Animated.timing(borderAnim, {
+            toValue: 1, duration: 180, useNativeDriver: false,
+        }).start();
+        if (rest.onFocus) rest.onFocus(e);
+    }, [borderAnim, rest]);
+
+    const handleBlur = useCallback((e: any) => {
+        setIsFocused(false);
+        Animated.timing(borderAnim, {
+            toValue: 0, duration: 180, useNativeDriver: false,
+        }).start();
+        if (rest.onBlur) rest.onBlur(e);
+    }, [borderAnim, rest]);
+
+    // Cores dinâmicas por tema + estado
+    const idleBorder = showError
+        ? '#EF4444'
+        : valid
+            ? theme.green
+            : theme.inputBorder;
+    const focusBorder = showError ? '#EF4444' : theme.green;
+
+    const borderColor = borderAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [idleBorder, focusBorder],
+    });
+    const shadowOpacity = borderAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, theme.isDark ? 0.35 : 0.18],
+    });
 
     return (
         <View style={styles.group}>
-            <Text style={[styles.label, focused && { color: theme.green }]}>
-                {label}
-            </Text>
-
-            <View
+            <Animated.View
                 style={[
                     styles.wrapper,
-                    { backgroundColor: theme.inputBg, borderColor: theme.inputBorder },
-                    focused && { borderColor: theme.green, shadowColor: theme.green, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.18, shadowRadius: 6, elevation: 2 },
-                    showError && { borderColor: '#EF4444', shadowColor: '#EF4444', shadowOpacity: 0.15 },
-                    valid && !showError && { borderColor: '#16A34A' },
+                    {
+                        backgroundColor: theme.inputBg,
+                        borderColor,
+                        shadowColor: showError ? '#EF4444' : theme.green,
+                        shadowOpacity,
+                        shadowOffset: { width: 0, height: 0 },
+                        shadowRadius: theme.isDark ? 8 : 5,
+                    },
                 ]}
             >
+                {/* Floating Label */}
+                <Animated.Text
+                    style={{
+                        position: 'absolute',
+                        left: 16,
+                        top: floatAnim.interpolate({ inputRange: [0, 1], outputRange: [18, 6] }),
+                        fontSize: floatAnim.interpolate({ inputRange: [0, 1], outputRange: [14, 11] }),
+                        color: floatAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [theme.textMuted, isFocused ? theme.green : theme.textSecondary]
+                        }),
+                        fontWeight: '600',
+                        fontFamily: theme.fonts?.medium,
+                    }}
+                >
+                    {label}
+                </Animated.Text>
+
                 <TextInput
-                    style={[styles.input, { color: theme.text }, style]}
-                    placeholderTextColor={theme.textMuted}
+                    style={[
+                        styles.input, 
+                        { color: theme.text, fontFamily: theme.fonts?.regular }, 
+                        style
+                    ]}
+                    // Quando não focado e sem valor, o placeholder nativo fica invisível (pois o Label ocupa o lugar)
+                    placeholderTextColor="transparent"
                     secureTextEntry={isPassword && !passwordVisible}
-                    onFocus={() => setFocused(true)}
-                    onBlur={() => setFocused(false)}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
+                    autoCorrect={false}
+                    autoComplete="off"
+                    accessibilityLabel={label}
+                    accessibilityHint={error || `Caixa de texto para ${label}`}
                     {...rest}
                 />
 
                 {/* Ícone de validação */}
                 {!isPassword && valid !== undefined && (
                     valid
-                        ? <CheckCircle2 size={18} color="#16A34A" strokeWidth={2} style={styles.icon} />
+                        ? <CheckCircle2 size={18} color={theme.green} strokeWidth={2} style={styles.icon} />
                         : showError
                             ? <AlertCircle size={18} color="#EF4444" strokeWidth={2} style={styles.icon} />
                             : null
                 )}
 
-                {/* Toggle de senha */}
+                {/* Toggle senha */}
                 {isPassword && (
                     <TouchableOpacity
                         style={styles.eyeBtn}
-                        onPress={() => setPasswordVisible(v => !v)}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        onPress={() => {
+                            Haptics.selectionAsync().catch(() => {});
+                            setPasswordVisible(v => !v);
+                        }}
+                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                        activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel={passwordVisible ? "Ocultar senha" : "Exibir senha"}
                     >
                         {passwordVisible
                             ? <EyeOff size={20} color={theme.textMuted} strokeWidth={2} />
                             : <Eye size={20} color={theme.textMuted} strokeWidth={2} />}
                     </TouchableOpacity>
                 )}
-            </View>
+            </Animated.View>
 
             {showError && (
                 <Text style={styles.errorText}>{error}</Text>
@@ -93,37 +176,36 @@ const FormInput: React.FC<FormInputProps> = ({
 
 const styles = StyleSheet.create({
     group: {
-        marginBottom: 20,
-    },
-    label: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: '#6B7280',
-        marginBottom: 8,
+        marginBottom: 18,
     },
     wrapper: {
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1.5,
-        borderRadius: 12,
+        borderRadius: 14,
+        elevation: 2,
+        position: 'relative',
     },
     input: {
         flex: 1,
         paddingHorizontal: 16,
-        paddingVertical: 14,
+        paddingTop: 24, // Espaço maior pro label em cima
+        paddingBottom: 8,
         fontSize: 16,
     },
     icon: {
-        marginRight: 12,
+        marginRight: 14,
     },
     eyeBtn: {
-        padding: 14,
+        paddingHorizontal: 14,
+        paddingTop: 24,
+        paddingBottom: 8,
     },
     errorText: {
         fontSize: 12,
         color: '#EF4444',
-        marginTop: 4,
-        marginLeft: 2,
+        marginTop: 5,
+        marginLeft: 4,
     },
 });
 

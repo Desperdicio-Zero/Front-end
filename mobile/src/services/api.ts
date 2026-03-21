@@ -175,9 +175,13 @@ export interface StatsResponse {
 // - Web:    usa localhost (backend e browser na mesma máquina)
 // - Mobile: usa o IP de rede local (celular acessa a máquina via Wi-Fi)
 import { Platform } from 'react-native';
+// ⚠️  TROQUE o IP abaixo pelo IP da sua máquina na rede atual.
+//    Para ver seu IP: abra o PowerShell e rode → ipconfig | findstr "IPv4"
+const MACHINE_IP = '192.168.15.6'; // ← ALTERE AQUI quando mudar de rede
+
 export const BASE_URL = Platform.OS === 'web'
   ? 'http://localhost:8000'
-  : 'http://192.168.18.9:8000';
+  : `http://${MACHINE_IP}:8000`;
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,

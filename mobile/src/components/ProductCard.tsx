@@ -2,10 +2,10 @@
  * src/components/ProductCard.tsx
  * ==============================
  * Card visual de um item do inventário com semáforo de urgência colorido.
- * Recebe callbacks de edição e remoção para manter a lógica nas screens.
+ * Totalmente theme-aware: dark OLED + light premium.
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   Alert,
   StyleSheet,
@@ -14,25 +14,26 @@ import {
   View,
 } from 'react-native';
 import { Calendar, ChefHat, Edit3, Package, Tag, Trash2 } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../contexts/ThemeContext';
 import type { PantryItem, RemovalReason, UrgencyStatus } from '../services/api';
 
 // ---------------------------------------------------------------------------
-// Paleta de cores por status de urgência
+// Paleta de urgência por tema
 // ---------------------------------------------------------------------------
 type Palette = { bg: string; border: string; badge: string; text: string; label: string };
 
-const URGENCY_LIGHT: Record<UrgencyStatus, Palette> = {
-  Verde: { bg: '#F0FDF4', border: '#22C55E', badge: '#22C55E', text: '#15803D', label: 'Em dia' },
-  Amarelo: { bg: '#FEFCE8', border: '#EAB308', badge: '#EAB308', text: '#A16207', label: 'Atenção' },
-  Vermelho: { bg: '#FFF1F2', border: '#EF4444', badge: '#EF4444', text: '#B91C1C', label: 'Urgente' },
+const URGENCY_DARK: Record<UrgencyStatus, Palette> = {
+  Verde:    { bg: 'rgba(34,197,94,0.10)',   border: '#22C55E', badge: '#16A34A', text: '#22C55E',  label: 'Em dia'   },
+  Amarelo:  { bg: 'rgba(234,179,8,0.10)',   border: '#EAB308', badge: '#CA8A04', text: '#FDE047',  label: 'Atenção'  },
+  Vermelho: { bg: 'rgba(239,68,68,0.10)',   border: '#EF4444', badge: '#DC2626', text: '#FCA5A5',  label: 'Urgente'  },
 };
 
-const URGENCY_DARK: Record<UrgencyStatus, Palette> = {
-  Verde: { bg: '#14532D', border: '#22C55E', badge: '#16A34A', text: '#86EFAC', label: 'Em dia' },
-  Amarelo: { bg: '#431A01', border: '#EAB308', badge: '#CA8A04', text: '#FDE047', label: 'Atenção' },
-  Vermelho: { bg: '#450A0A', border: '#EF4444', badge: '#DC2626', text: '#FCA5A5', label: 'Urgente' },
+const URGENCY_LIGHT: Record<UrgencyStatus, Palette> = {
+  Verde:    { bg: '#F0FDF4', border: '#22C55E', badge: '#16A34A', text: '#15803D', label: 'Em dia'  },
+  Amarelo:  { bg: '#FEFCE8', border: '#EAB308', badge: '#CA8A04', text: '#A16207', label: 'Atenção' },
+  Vermelho: { bg: '#FFF1F2', border: '#EF4444', badge: '#DC2626', text: '#B91C1C', label: 'Urgente' },
 };
 
 // ---------------------------------------------------------------------------
@@ -64,62 +65,79 @@ function formatDate(iso: string): string {
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
-const ProductCard: React.FC<ProductCardProps> = ({ item, onEdit, onDelete, onRecipe, onPress }) => {
+const ProductCard: React.FC<ProductCardProps> = React.memo(({ item, onEdit, onDelete, onRecipe, onPress }) => {
   const { theme } = useTheme();
   const palette = theme.isDark
     ? URGENCY_DARK[item.status_urgencia]
     : URGENCY_LIGHT[item.status_urgencia];
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     Alert.alert(
       'Como esse item foi removido?',
       `"${item.name}" — selecione o motivo para o nosso relatório:`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: '🗑 Venceu/Descartado',
+          text: 'Venceu/Descartado',
           style: 'destructive',
-          onPress: () => onDelete(item.id, item, 'expired'),
+          onPress: () => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+            onDelete(item.id, item, 'expired');
+          },
         },
         {
-          text: '✅ Consumido',
+          text: 'Consumido',
           style: 'default',
-          onPress: () => onDelete(item.id, item, 'consumed'),
+          onPress: () => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+            onDelete(item.id, item, 'consumed');
+          },
         },
       ]
     );
-  };
+  }, [item, onDelete]);
+
+  const handleRecipe = useCallback(() => {
+    Haptics.selectionAsync().catch(() => {});
+    onRecipe(item);
+  }, [item, onRecipe]);
 
   return (
     <TouchableOpacity
       style={[
         styles.card,
-        { backgroundColor: palette.bg, borderLeftColor: palette.border },
+        {
+          backgroundColor: palette.bg,
+          borderLeftColor: palette.border,
+          borderColor: theme.border,
+          shadowColor: palette.border,
+        },
       ]}
       onPress={() => onPress?.(item)}
       activeOpacity={onPress ? 0.85 : 1}
     >
-      {/* Cabeçalho: nome + badge de urgência */}
+      {/* Cabeçalho: nome + badge */}
       <View style={styles.header}>
         <View style={styles.nameRow}>
           <Package size={16} color={palette.text} strokeWidth={2} />
-          <Text style={[styles.itemName, { color: palette.text }]} numberOfLines={1}>
+          <Text style={[styles.itemName, { color: palette.text, fontFamily: theme.fonts?.heading }]} numberOfLines={1}>
             {item.name}
           </Text>
         </View>
         <View style={[styles.badge, { backgroundColor: palette.badge }]}>
-          <Text style={styles.badgeText}>{palette.label}</Text>
+          <Text style={[styles.badgeText, { fontFamily: theme.fonts?.heading }]}>{palette.label}</Text>
         </View>
       </View>
 
-      {/* Detalhes: categoria, quantidade, validade */}
+      {/* Detalhes */}
       <View style={styles.detailsRow}>
         <View style={styles.detailItem}>
           <Tag size={12} color={theme.textSecondary} strokeWidth={2} />
-          <Text style={[styles.detailText, { color: theme.textSecondary }]}>{item.category.name}</Text>
+          <Text style={[styles.detailText, { color: theme.textSecondary, fontFamily: theme.fonts?.regular }]}>{item.category.name}</Text>
         </View>
         <View style={styles.detailItem}>
-          <Text style={[styles.quantityText, { color: theme.textSecondary }]}>
+          <Text style={[styles.quantityText, { color: theme.textSecondary, fontFamily: theme.fonts?.medium }]}>
             {item.quantity} {item.unit}
           </Text>
         </View>
@@ -128,7 +146,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ item, onEdit, onDelete, onRec
       {/* Validade */}
       <View style={styles.expiryRow}>
         <Calendar size={13} color={palette.text} strokeWidth={2} />
-        <Text style={[styles.expiryText, { color: palette.text }]}>
+        <Text style={[styles.expiryText, { color: palette.text, fontFamily: theme.fonts?.medium }]}>
           {formatExpiryLabel(item.days_until_expiry)} • {formatDate(item.expiry_date)}
           {item.expiry_estimated ? ' (estimada)' : ''}
         </Text>
@@ -136,52 +154,69 @@ const ProductCard: React.FC<ProductCardProps> = ({ item, onEdit, onDelete, onRec
 
       {/* Ações */}
       <View style={styles.actionsRow}>
+        {/* Receita */}
         <TouchableOpacity
-          style={[styles.actionBtn, styles.recipeBtn]}
-          onPress={() => onRecipe(item)}
-          accessibilityLabel={`Receita com ${item.name}`}
+          style={[styles.actionBtn, {
+            borderColor: theme.greenBorder,
+            backgroundColor: theme.greenBg,
+          }]}
+          onPress={handleRecipe}
+          accessibilityLabel={`Ver receitas usando ${item.name}`}
+          accessibilityRole="button"
         >
-          <ChefHat size={14} color="#16A34A" strokeWidth={2} />
-          <Text style={styles.recipeBtnText}>Receita</Text>
+          <ChefHat size={14} color={theme.green} strokeWidth={2} />
+          <Text style={[styles.actionBtnText, { color: theme.green, fontFamily: theme.fonts?.medium }]}>Receita</Text>
         </TouchableOpacity>
 
+        {/* Editar */}
         <TouchableOpacity
-          style={[styles.actionBtn, styles.editBtn]}
+          style={[styles.actionBtn, {
+            borderColor: theme.isDark ? 'rgba(59,130,246,0.35)' : '#BFDBFE',
+            backgroundColor: theme.isDark ? 'rgba(59,130,246,0.10)' : '#EFF6FF',
+          }]}
           onPress={() => onEdit(item)}
-          accessibilityLabel={`Editar ${item.name}`}
+          accessibilityLabel={`Editar item ${item.name}`}
+          accessibilityRole="button"
         >
           <Edit3 size={14} color="#3B82F6" strokeWidth={2} />
-          <Text style={styles.editBtnText}>Editar</Text>
+          <Text style={[styles.actionBtnText, { color: '#3B82F6', fontFamily: theme.fonts?.medium }]}>Editar</Text>
         </TouchableOpacity>
 
+        {/* Remover */}
         <TouchableOpacity
-          style={[styles.actionBtn, styles.deleteBtn]}
+          style={[styles.actionBtn, {
+            borderColor: theme.isDark ? 'rgba(239,68,68,0.35)' : '#FCA5A5',
+            backgroundColor: theme.isDark ? 'rgba(239,68,68,0.10)' : '#FFF1F2',
+          }]}
           onPress={handleDelete}
-          accessibilityLabel={`Remover ${item.name}`}
+          accessibilityLabel={`Remover ${item.name} do inventário`}
+          accessibilityRole="button"
         >
           <Trash2 size={14} color="#EF4444" strokeWidth={2} />
-          <Text style={styles.deleteBtnText}>Remover</Text>
+          <Text style={[styles.actionBtnText, { color: '#EF4444', fontFamily: theme.fonts?.medium }]}>Remover</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
-};
+});
+
+ProductCard.displayName = 'ProductCard';
 
 // ---------------------------------------------------------------------------
-// Styles
+// Styles (estruturais apenas — cores via theme tokens acima)
 // ---------------------------------------------------------------------------
 const styles = StyleSheet.create({
   card: {
-    borderLeftWidth: 5,
-    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderWidth: 1,
+    borderRadius: 16,
     padding: 14,
     marginHorizontal: 16,
     marginVertical: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.07,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.20,
+    shadowRadius: 8,
+    elevation: 4,
   },
   header: {
     flexDirection: 'row',
@@ -198,7 +233,7 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
     flex: 1,
   },
   badge: {
@@ -208,10 +243,10 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     color: '#FFF',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
   },
   detailsRow: {
     flexDirection: 'row',
@@ -225,11 +260,9 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 12,
-    color: '#6B7280',
   },
   quantityText: {
     fontSize: 12,
-    color: '#6B7280',
     fontWeight: '500',
   },
   expiryRow: {
@@ -254,35 +287,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    paddingVertical: 5,
+    paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
   },
-  recipeBtn: {
-    borderColor: '#86EFAC',
-    backgroundColor: '#F0FDF4',
-  },
-  recipeBtnText: {
-    color: '#16A34A',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  editBtn: {
-    borderColor: '#3B82F6',
-    backgroundColor: '#EFF6FF',
-  },
-  editBtnText: {
-    color: '#3B82F6',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  deleteBtn: {
-    borderColor: '#FCA5A5',
-    backgroundColor: '#FFF1F2',
-  },
-  deleteBtnText: {
-    color: '#EF4444',
+  actionBtnText: {
     fontSize: 12,
     fontWeight: '600',
   },
