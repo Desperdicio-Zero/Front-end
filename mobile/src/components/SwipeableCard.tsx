@@ -29,6 +29,7 @@ import {
 } from 'react-native';
 import { Edit3, Trash2 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { useTheme } from '../contexts/ThemeContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SLOT_W       = 88;
@@ -44,8 +45,11 @@ interface SwipeableCardProps {
 }
 
 const SwipeableCard: React.FC<SwipeableCardProps> = ({ children, onEdit, onDelete }) => {
+  const { theme } = useTheme();
   const panX   = useRef(new Animated.Value(NEUTRAL)).current;
   const startX = useRef(NEUTRAL);
+  const hasVibratedDelete = useRef(false);
+  const hasVibratedEdit = useRef(false);
 
   const snapTo = (toValue: number) => {
     startX.current = toValue;
@@ -76,6 +80,21 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({ children, onEdit, onDelet
       onPanResponderMove: (_, g) => {
         const next = Math.max(DELETE_OPEN, Math.min(EDIT_OPEN, startX.current + g.dx));
         panX.setValue(next);
+
+        // Haptic feedback de limite (UI Pro Max micro-interaction)
+        if (g.dx < -SWIPE_THRESH && !hasVibratedDelete.current) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid).catch(() => {});
+          hasVibratedDelete.current = true;
+        } else if (g.dx >= -SWIPE_THRESH) {
+          hasVibratedDelete.current = false;
+        }
+
+        if (g.dx > SWIPE_THRESH && !hasVibratedEdit.current) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid).catch(() => {});
+          hasVibratedEdit.current = true;
+        } else if (g.dx <= SWIPE_THRESH) {
+          hasVibratedEdit.current = false;
+        }
       },
 
       onPanResponderRelease: (_, g) => {
@@ -103,7 +122,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({ children, onEdit, onDelet
           activeOpacity={0.8}
         >
           <Edit3 size={20} color="#FFF" strokeWidth={2.5} />
-          <Text style={s.actionLabel}>Editar</Text>
+          <Text style={[s.actionLabel, { fontFamily: theme.fonts?.medium }]}>Editar</Text>
         </TouchableOpacity>
 
         {/* ── Card (recebe panHandlers) ─────────────────────── */}
@@ -122,7 +141,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({ children, onEdit, onDelet
           activeOpacity={0.8}
         >
           <Trash2 size={20} color="#FFF" strokeWidth={2.5} />
-          <Text style={s.actionLabel}>Remover</Text>
+          <Text style={[s.actionLabel, { fontFamily: theme.fonts?.medium }]}>Remover</Text>
         </TouchableOpacity>
 
       </Animated.View>

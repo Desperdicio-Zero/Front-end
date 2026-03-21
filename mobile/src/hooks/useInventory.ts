@@ -21,17 +21,6 @@ import {
   updateItem,
 } from '../services/api';
 
-const isExpoGoAndroid =
-  Platform.OS === 'android' && Constants.executionEnvironment === 'storeClient';
-
-async function scheduleInventoryNotifications(items: PantryItem[]): Promise<void> {
-  if (isExpoGoAndroid) return;
-
-  const { scheduleExpiryNotifications, schedulePerItemNotifications } = await import('../services/notifications');
-  await scheduleExpiryNotifications(items);
-  await schedulePerItemNotifications(items);
-}
-
 // ---------------------------------------------------------------------------
 // Tipos de retorno do hook
 // ---------------------------------------------------------------------------
@@ -71,8 +60,6 @@ export function useInventory(): UseInventoryReturn {
       setError(null);
       const data = await fetchInventory();
       setItems(data);
-      // Notificações são ignoradas no Expo Go Android (SDK 53+)
-      scheduleInventoryNotifications(data).catch(() => {});
     } catch {
       setError('Não foi possível carregar o inventário. Verifique a conexão.');
     } finally {
@@ -122,13 +109,13 @@ export function useInventory(): UseInventoryReturn {
       try {
         // Registra no histórico antes de deletar
         await recordHistory({
-          item_name:      item.name,
-          category_name:  item.category.name,
-          quantity:       Number(item.quantity),
-          unit:           item.unit,
-          expiry_date:    item.expiry_date,
+          item_name: item.name,
+          category_name: item.category.name,
+          quantity: Number(item.quantity),
+          unit: item.unit,
+          expiry_date: item.expiry_date,
           removal_reason: reason,
-          notes:          item.notes ?? undefined,
+          notes: item.notes ?? undefined,
         });
         await deleteItem(id);
       } catch {

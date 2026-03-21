@@ -29,8 +29,11 @@ import {
   Tag,
   Trash2,
   X,
+  Layers,
 } from 'lucide-react-native';
 import MarkdownText from '../components/MarkdownText';
+import { SkeletonItem } from '../components/SkeletonItem';
+import LottieView from 'lottie-react-native';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../contexts/ThemeContext';
@@ -52,14 +55,14 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ItemDetail'>;
 type Palette = { bg: string; border: string; badge: string; text: string; label: string };
 
 const URGENCY_LIGHT: Record<UrgencyStatus, Palette> = {
-  Verde:    { bg: '#F0FDF4', border: '#22C55E', badge: '#22C55E', text: '#15803D', label: 'Em dia' },
-  Amarelo:  { bg: '#FEFCE8', border: '#EAB308', badge: '#EAB308', text: '#A16207', label: 'Atenção' },
-  Vermelho: { bg: '#FFF1F2', border: '#EF4444', badge: '#EF4444', text: '#B91C1C', label: 'Urgente' },
+  Verde: { bg: 'rgba(34,197,94,0.1)', border: '#22C55E', badge: '#22C55E', text: '#22C55E', label: 'Em dia' },
+  Amarelo: { bg: 'rgba(234,179,8,0.1)', border: '#EAB308', badge: '#EAB308', text: '#FDE047', label: 'Atenção' },
+  Vermelho: { bg: 'rgba(239,68,68,0.1)', border: '#EF4444', badge: '#EF4444', text: '#FCA5A5', label: 'Urgente' },
 };
 const URGENCY_DARK: Record<UrgencyStatus, Palette> = {
-  Verde:    { bg: '#14532D', border: '#22C55E', badge: '#16A34A', text: '#86EFAC', label: 'Em dia' },
-  Amarelo:  { bg: '#431A01', border: '#EAB308', badge: '#CA8A04', text: '#FDE047', label: 'Atenção' },
-  Vermelho: { bg: '#450A0A', border: '#EF4444', badge: '#DC2626', text: '#FCA5A5', label: 'Urgente' },
+  Verde: { bg: 'rgba(34,197,94,0.1)', border: '#22C55E', badge: '#16A34A', text: '#22C55E', label: 'Em dia' },
+  Amarelo: { bg: 'rgba(234,179,8,0.1)', border: '#EAB308', badge: '#CA8A04', text: '#FDE047', label: 'Atenção' },
+  Vermelho: { bg: 'rgba(239,68,68,0.1)', border: '#EF4444', badge: '#DC2626', text: '#FCA5A5', label: 'Urgente' },
 };
 
 // ---------------------------------------------------------------------------
@@ -78,17 +81,17 @@ function formatDatetime(isoDatetime: string): string {
 }
 
 const REASON_LABEL: Record<RemovalReason, string> = {
-  consumed: '✅ Consumido',
-  expired:  '🗑 Venceu/Descartado',
-  donated:  '🤝 Doado',
-  other:    '📦 Outro',
+  consumed: 'Consumido',
+  expired: 'Venceu/Descartado',
+  donated: 'Doado',
+  other: 'Outro motivo',
 };
 
 const REASON_COLOR: Record<RemovalReason, string> = {
   consumed: '#16A34A',
-  expired:  '#DC2626',
-  donated:  '#7C3AED',
-  other:    '#6B7280',
+  expired: '#DC2626',
+  donated: '#7C3AED',
+  other: '#6B7280',
 };
 
 // ---------------------------------------------------------------------------
@@ -128,7 +131,7 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const handleDelete = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => { });
     Alert.alert(
       'Como esse item foi removido?',
       `"${item.name}" — selecione o motivo:`,
@@ -139,7 +142,7 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           style: 'destructive',
           onPress: async () => {
             await removeItem(item.id, item, 'expired');
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
             navigation.goBack();
           },
         },
@@ -147,7 +150,7 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           text: '✅ Consumido',
           onPress: async () => {
             await removeItem(item.id, item, 'consumed');
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
             navigation.goBack();
           },
         },
@@ -156,6 +159,7 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const handleRecipe = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     setRecipeText('');
     setRecipeLoading(true);
     setRecipeVisible(true);
@@ -172,7 +176,7 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   // -- Helpers de exibição de validade ----------------------------------------
   const expiryLabel = () => {
     const d = item.days_until_expiry;
-    if (d < 0)  return `Vencido há ${Math.abs(d)} dia(s)`;
+    if (d < 0) return `Vencido há ${Math.abs(d)} dia(s)`;
     if (d === 0) return 'Vence hoje!';
     if (d === 1) return 'Vence amanhã';
     return `Vence em ${d} dias`;
@@ -222,7 +226,7 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
           {/* Quantidade */}
           <View style={s.infoRow}>
-            <Text style={[s.infoIcon, { color: theme.textSecondary }]}>📦</Text>
+            <Layers size={16} color={theme.textSecondary} strokeWidth={2} />
             <Text style={[s.infoLabel, { color: theme.textMuted }]}>Quantidade</Text>
             <Text style={[s.infoValue, { color: theme.text }]}>
               {item.quantity} {item.unit}
@@ -263,7 +267,7 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             onPress={handleRecipe}
           >
             <ChefHat size={18} color={theme.green} strokeWidth={2} />
-            <Text style={[s.actionBtnText, { color: theme.green }]}>Receita</Text>
+            <Text style={[s.actionBtnText, { color: theme.green, fontFamily: theme.fonts?.medium }]}>Receita</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -271,7 +275,7 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             onPress={handleEdit}
           >
             <Edit3 size={18} color="#3B82F6" strokeWidth={2} />
-            <Text style={[s.actionBtnText, { color: '#3B82F6' }]}>Editar</Text>
+            <Text style={[s.actionBtnText, { color: '#3B82F6', fontFamily: theme.fonts?.medium }]}>Editar</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -279,7 +283,7 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             onPress={handleDelete}
           >
             <Trash2 size={18} color="#EF4444" strokeWidth={2} />
-            <Text style={[s.actionBtnText, { color: '#EF4444' }]}>Remover</Text>
+            <Text style={[s.actionBtnText, { color: '#EF4444', fontFamily: theme.fonts?.medium }]}>Remover</Text>
           </TouchableOpacity>
         </View>
 
@@ -291,7 +295,11 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
 
           {loadingHistory ? (
-            <ActivityIndicator color={theme.green} style={{ padding: 20 }} />
+            <View style={{ paddingHorizontal: 4, paddingVertical: 8 }}>
+              <SkeletonItem />
+              <SkeletonItem />
+              <SkeletonItem />
+            </View>
           ) : history.length === 0 ? (
             <Text style={[s.emptyHistory, { color: theme.textMuted }]}>
               Nenhuma remoção registrada ainda.
@@ -325,21 +333,36 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         visible={recipeVisible}
         animationType="slide"
         transparent
-        onRequestClose={() => setRecipeVisible(false)}
+        onRequestClose={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+          setRecipeVisible(false);
+        }}
       >
-        <View style={s.modalOverlay}>
+        <View style={[s.modalOverlay, { backgroundColor: theme.overlay }]}>
           <View style={[s.modalBox, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <View style={[s.modalHeader, { borderBottomColor: theme.border }]}>
-              <Text style={[s.modalTitle, { color: theme.text }]}>🍽 Sugestão de Receita</Text>
-              <TouchableOpacity onPress={() => setRecipeVisible(false)}>
+              <ChefHat size={20} color={theme.text} style={{ marginRight: 8 }} strokeWidth={2.5} />
+              <Text style={[s.modalTitle, { color: theme.text, fontFamily: theme.fonts?.heading }]}>Sugestão de Receita</Text>
+              <TouchableOpacity 
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                  setRecipeVisible(false);
+                }}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
                 <X size={20} color={theme.textMuted} strokeWidth={2} />
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={s.modalContent}>
               {recipeLoading ? (
                 <View style={s.recipeLoading}>
-                  <ActivityIndicator color={theme.green} size="large" />
-                  <Text style={[s.recipeLoadingText, { color: theme.textMuted }]}>
+                  <LottieView
+                    autoPlay
+                    loop
+                    source={{ uri: 'https://lottie.host/8c5d2b7d-e6a3-4b92-8086-4cfac552cba1/t0M9jWeGj9.json' }}
+                    style={{ width: 140, height: 140 }}
+                  />
+                  <Text style={[s.recipeLoadingText, { color: theme.textMuted, fontFamily: theme.fonts?.medium }]}>
                     Gerando receita com IA…
                   </Text>
                 </View>
@@ -359,20 +382,23 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 // Styles
 // ---------------------------------------------------------------------------
 const s = StyleSheet.create({
-  root: { flex: 1 },
+  root: { flex: 1, backgroundColor: '#060A10' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
+    backgroundColor: '#060A10',
     borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.07)',
   },
   backBtn: { padding: 4 },
   headerTitle: {
     flex: 1,
     fontSize: 17,
     fontWeight: '700',
+    color: '#F0FDF4',
   },
   statusBadge: {
     borderRadius: 20,
@@ -393,13 +419,16 @@ const s = StyleSheet.create({
   },
   mainCard: {
     borderLeftWidth: 5,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 16,
+    backgroundColor: '#0F1923',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 6,
   },
   infoRow: {
     flexDirection: 'row',
@@ -412,11 +441,13 @@ const s = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     width: 76,
+    color: 'rgba(255,255,255,0.35)',
   },
   infoValue: {
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
+    color: '#F0FDF4',
   },
   expiryCol: { flex: 1 },
   expirySubtitle: {
@@ -427,16 +458,19 @@ const s = StyleSheet.create({
   divider: {
     height: 1,
     marginHorizontal: -2,
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
   notesBox: { paddingVertical: 10 },
   notesLabel: {
     fontSize: 12,
     fontWeight: '500',
     marginBottom: 4,
+    color: 'rgba(255,255,255,0.35)',
   },
   notesText: {
     fontSize: 14,
     lineHeight: 20,
+    color: 'rgba(255,255,255,0.6)',
   },
   actionsRow: {
     flexDirection: 'row',
@@ -448,18 +482,20 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1.5,
+    paddingVertical: 13,
+    borderRadius: 14,
+    borderWidth: 1,
   },
   actionBtnText: {
     fontSize: 13,
     fontWeight: '700',
   },
   section: {
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
     overflow: 'hidden',
+    backgroundColor: '#0F1923',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -467,16 +503,18 @@ const s = StyleSheet.create({
     gap: 8,
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.06)',
+    borderBottomColor: 'rgba(255,255,255,0.07)',
   },
   sectionTitle: {
     fontSize: 15,
     fontWeight: '700',
+    color: '#F0FDF4',
   },
   emptyHistory: {
     padding: 16,
     fontSize: 14,
     textAlign: 'center',
+    color: 'rgba(255,255,255,0.3)',
   },
   historyItem: {
     flexDirection: 'row',
@@ -484,6 +522,7 @@ const s = StyleSheet.create({
     alignItems: 'flex-start',
     padding: 14,
     borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
     gap: 8,
   },
   historyLeft: { flex: 1 },
@@ -494,27 +533,32 @@ const s = StyleSheet.create({
   },
   historyDetails: {
     fontSize: 12,
+    color: 'rgba(255,255,255,0.4)',
   },
   historyNotes: {
     fontSize: 11,
     fontStyle: 'italic',
     marginTop: 2,
+    color: 'rgba(255,255,255,0.3)',
   },
   historyDate: {
     fontSize: 11,
     textAlign: 'right',
     flexShrink: 0,
+    color: 'rgba(255,255,255,0.3)',
   },
   // ---- Modal styles ----
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(0,0,0,0.75)',
     justifyContent: 'flex-end',
   },
   modalBox: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#0F1923',
     maxHeight: '80%',
   },
   modalHeader: {
@@ -523,10 +567,12 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   modalTitle: {
     fontSize: 16,
     fontWeight: '700',
+    color: '#F0FDF4',
   },
   modalContent: {
     padding: 16,
@@ -539,6 +585,7 @@ const s = StyleSheet.create({
   },
   recipeLoadingText: {
     fontSize: 14,
+    color: 'rgba(255,255,255,0.45)',
   },
 });
 
