@@ -10,7 +10,7 @@ interface AuthContextData {
     signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextData>({} as AuthContextData);
+const AuthContext = createContext<AuthContextData | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [userToken, setUserToken] = useState<string | null>(null);

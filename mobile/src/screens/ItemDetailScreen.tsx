@@ -25,6 +25,7 @@ import {
   ChefHat,
   Clock,
   Edit3,
+  Heart,
   Package,
   Tag,
   Trash2,
@@ -138,6 +139,10 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       [
         { text: 'Cancelar', style: 'cancel' },
         {
+          text: '🤝 Doar',
+          onPress: () => navigation.navigate('Donation', { item }),
+        },
+        {
           text: '🗑 Venceu/Descartado',
           style: 'destructive',
           onPress: async () => {
@@ -171,6 +176,11 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     } finally {
       setRecipeLoading(false);
     }
+  };
+
+  const handleDonate = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    navigation.navigate('Donation', { item });
   };
 
   // -- Helpers de exibição de validade ----------------------------------------
@@ -269,6 +279,16 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             <ChefHat size={18} color={theme.green} strokeWidth={2} />
             <Text style={[s.actionBtnText, { color: theme.green, fontFamily: theme.fonts?.medium }]}>Receita</Text>
           </TouchableOpacity>
+
+          {(item.status_urgencia === 'Amarelo' || item.status_urgencia === 'Vermelho') && (
+            <TouchableOpacity
+              style={[s.actionBtn, { backgroundColor: '#F5F3FF', borderColor: '#C4B5FD' }]}
+              onPress={handleDonate}
+            >
+              <Heart size={18} color="#7C3AED" strokeWidth={2} />
+              <Text style={[s.actionBtnText, { color: '#7C3AED', fontFamily: theme.fonts?.medium }]}>Doar</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[s.actionBtn, { backgroundColor: '#EFF6FF', borderColor: '#3B82F6' }]}

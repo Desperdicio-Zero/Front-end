@@ -8,7 +8,7 @@
  * Troque BASE_URL pela URL do seu servidor (ex: IP local para Expo físico).
  */
 
-import axios from 'axios';
+import axios, { type AxiosError } from 'axios';
 
 // ---------------------------------------------------------------------------
 // Tipos espelhados do backend (schemas Pydantic)
@@ -177,7 +177,7 @@ export interface StatsResponse {
 import { Platform } from 'react-native';
 // ⚠️  TROQUE o IP abaixo pelo IP da sua máquina na rede atual.
 //    Para ver seu IP: abra o PowerShell e rode → ipconfig | findstr "IPv4"
-const MACHINE_IP = '192.168.15.6'; // ← ALTERE AQUI quando mudar de rede
+const MACHINE_IP = '192.168.15.4'; // ← ALTERE AQUI quando mudar de rede
 
 export const BASE_URL = Platform.OS === 'web'
   ? 'http://localhost:8000'
@@ -192,8 +192,8 @@ export const apiClient = axios.create({
 // Interceptor global de erros (log + re-throw para os hooks tratarem)
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    console.error('[API Error]', error?.response?.data ?? error.message);
+  (error: AxiosError) => {
+    console.error('[API Error]', error.response?.data ?? error.message);
     return Promise.reject(error);
   }
 );
@@ -256,8 +256,13 @@ export const createItem = async (payload: PantryItemCreate): Promise<PantryItem>
   return data;
 };
 
+export interface TokenResponse {
+  access_token: string;
+  token_type: string;
+}
+
 // Auth Methods
-export const login = async (email: string, password: string) => {
+export const login = async (email: string, password: string): Promise<TokenResponse> => {
   // fastapi OAuth2PasswordRequestForm expects form-urlencoded
   const params = new URLSearchParams();
   params.append('username', email);
@@ -271,7 +276,7 @@ export const login = async (email: string, password: string) => {
   return res.data; // { access_token: string, token_type: string }
 };
 
-export const register = async (email: string, password: string) => {
+export const register = async (email: string, password: string): Promise<void> => {
   const { data } = await apiClient.post('/auth/register', {
     email,
     password,
@@ -335,6 +340,99 @@ export const generateRecipe = async (products: string[]): Promise<RecipeResponse
   const { data } = await apiClient.post<RecipeResponse>(
     '/generate-recipe/',
     { products },
+    { timeout: 45_000 },
+  );
+  return data;
+};
+
+// ---------------------------------------------------------------------------
+// Funções de acesso — Nota Fiscal (Receipt)
+// ---------------------------------------------------------------------------
+
+export interface ParsedReceiptItem {
+  name: string;
+  quantity: number;
+  unit: string;
+  category_id: number;
+  category_hint: string;
+}
+
+export interface ReceiptScanResponse {
+  items_parsed: ParsedReceiptItem[];
+  items_created: PantryItem[];
+  raw_count: number;
+}
+
+/**
+ * Envia a foto do cupom fiscal e recebe os produtos extraídos por IA.
+ * Timeout estendido (60s) pois o Gemini Vision pode demorar.
+ */
+export const scanReceipt = async (imageBase64: string): Promise<ReceiptScanResponse> => {
+  const { data } = await apiClient.post<ReceiptScanResponse>(
+    '/receipt/scan',
+    { image_base64: imageBase64 },
+    { timeout: 60_000 },
+  );
+  return data;
+};
+
+/**
+ * Importa os itens selecionados pelo usuário após a revisão do cupom.
+ */
+export const importReceiptItems = async (items: ParsedReceiptItem[]): Promise<PantryItem[]> => {
+  const { data } = await apiClient.post<PantryItem[]>(
+    '/receipt/import',
+    { items },
+    { timeout: 30_000 },
+  );
+  return data;
+};
+
+// ---------------------------------------------------------------------------
+// Funções de acesso — Doação Reversa
+// ---------------------------------------------------------------------------
+
+export interface DonationEligibility {
+  eligible: boolean;
+  reason: string | null;
+}
+
+export interface DonationPlace {
+  name: string;
+  address: string;
+  phone: string | null;
+  whatsapp: string | null;
+  distance_km: number;
+  accepts_perishable: boolean;
+  hours: string;
+  description: string;
+}
+
+export interface DonationSuggestResponse {
+  places: DonationPlace[];
+  item_name: string;
+  whatsapp_message: string;
+}
+
+/** Verifica se o item é elegível para doação. */
+export const checkDonationEligibility = async (itemId: number): Promise<DonationEligibility> => {
+  const { data } = await apiClient.post<DonationEligibility>(
+    '/donation/check',
+    { item_id: itemId },
+  );
+  return data;
+};
+
+/** Busca ONGs/Bancos de Alimentos próximos para doação. */
+export const suggestDonationPlaces = async (
+  itemId: number,
+  latitude: number,
+  longitude: number,
+  city: string = '',
+): Promise<DonationSuggestResponse> => {
+  const { data } = await apiClient.post<DonationSuggestResponse>(
+    '/donation/suggest',
+    { item_id: itemId, latitude, longitude, city },
     { timeout: 45_000 },
   );
   return data;

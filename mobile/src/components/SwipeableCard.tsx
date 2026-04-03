@@ -26,6 +26,8 @@ import {
   Text,
   TouchableOpacity,
   View,
+  GestureResponderEvent,
+  PanResponderGestureState,
 } from 'react-native';
 import { Edit3, Trash2 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -69,7 +71,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({ children, onEdit, onDelet
 
   const panResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) =>
+      onMoveShouldSetPanResponder: (e: GestureResponderEvent, g: PanResponderGestureState) =>
         Math.abs(g.dx) > Math.abs(g.dy) * 1.5 && Math.abs(g.dx) > 8,
 
       onPanResponderGrant: () => {
@@ -77,7 +79,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({ children, onEdit, onDelet
         panX.setValue(NEUTRAL);
       },
 
-      onPanResponderMove: (_, g) => {
+      onPanResponderMove: (e: GestureResponderEvent, g: PanResponderGestureState) => {
         const next = Math.max(DELETE_OPEN, Math.min(EDIT_OPEN, startX.current + g.dx));
         panX.setValue(next);
 
@@ -97,7 +99,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({ children, onEdit, onDelet
         }
       },
 
-      onPanResponderRelease: (_, g) => {
+      onPanResponderRelease: (e: GestureResponderEvent, g: PanResponderGestureState) => {
         if      (g.dx >  SWIPE_THRESH) snapTo(EDIT_OPEN);
         else if (g.dx < -SWIPE_THRESH) snapTo(DELETE_OPEN);
         else                           close();

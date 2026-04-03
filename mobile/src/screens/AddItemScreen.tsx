@@ -21,7 +21,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Check, ChevronDown, ScanLine } from 'lucide-react-native';
+import { Check, ChevronDown, FileText, ScanLine } from 'lucide-react-native';
 
 import { useInventory } from '../hooks/useInventory';
 import { useTheme } from '../contexts/ThemeContext';
@@ -162,7 +162,8 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
       Toast.show({ type: 'error', text1: 'Campo obrigatório', text2: 'Informe o nome do produto.' });
       return;
     }
-    if (!useAutoExpiry && !parseDateInput(expiryInput)) {
+    const parsedDate = parseDateInput(expiryInput);
+    if (!useAutoExpiry && !parsedDate) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => { });
       Toast.show({ type: 'error', text1: 'Data inválida', text2: 'Use o formato DD/MM/AAAA.' });
       return;
@@ -174,7 +175,7 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
       return;
     }
 
-    const expiryDate = useAutoExpiry ? undefined : parseDateInput(expiryInput)!;
+    const expiryDate = useAutoExpiry ? undefined : parsedDate;
 
     try {
       if (isEditing && itemToEdit) {
@@ -230,6 +231,24 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
           <Text style={[styles.screenTitle, { fontFamily: theme.fonts?.heading }]}>
             {isEditing ? 'Editar Item' : 'Novo Item'}
           </Text>
+
+          {/* Botão de importar nota fiscal */}
+          {!isEditing && (
+            <TouchableOpacity
+              style={[styles.receiptBtn, { backgroundColor: theme.greenBg, borderColor: theme.greenBorder }]}
+              onPress={() => navigation.navigate('ReceiptScan')}
+              activeOpacity={0.7}
+            >
+              <FileText size={20} color={theme.green} strokeWidth={2} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.receiptBtnTitle, { color: theme.green }]}>Importar Nota Fiscal</Text>
+                <Text style={[styles.receiptBtnSubtitle, { color: theme.textSecondary }]}>
+                  Fotografe o cupom e importe todos os produtos
+                </Text>
+              </View>
+              <ChevronDown size={18} color={theme.green} strokeWidth={2} style={{ transform: [{ rotate: '-90deg' }] }} />
+            </TouchableOpacity>
+          )}
 
           {/* Campo: Nome + Typeahead */}
           <View style={[styles.fieldGroup, { zIndex: 50 }]}>
@@ -610,6 +629,23 @@ function makeStyles(_theme: AppTheme) {
       fontSize: 16,
       fontWeight: '700',
       letterSpacing: 0.3,
+    },
+    receiptBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      padding: 16,
+      borderRadius: 14,
+      borderWidth: 1.5,
+      marginBottom: 24,
+    },
+    receiptBtnTitle: {
+      fontSize: 15,
+      fontWeight: '700',
+      marginBottom: 2,
+    },
+    receiptBtnSubtitle: {
+      fontSize: 12,
     },
   });
 }
