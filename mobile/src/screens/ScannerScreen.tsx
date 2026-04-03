@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { X, RefreshCw, ScanLine } from 'lucide-react-native';
@@ -29,6 +29,15 @@ export interface ScanResult {
   barcode: string;
 }
 
+export interface OpenFoodFactsResponse {
+  status: number;
+  product?: {
+    product_name_pt?: string;
+    product_name?: string;
+    categories_tags?: string[];
+  };
+}
+
 const ScannerScreen: React.FC<Props> = ({ navigation }) => {
   const { theme } = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
@@ -36,7 +45,7 @@ const ScannerScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState('Aponte a câmera para o código de barras');
 
-  const handleBarCodeScanned = async ({ data }: { type: string; data: string }) => {
+  const handleBarCodeScanned = async ({ data }: BarcodeScanningResult) => {
     if (scanned || loading) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     setScanned(true);
@@ -62,7 +71,7 @@ const ScannerScreen: React.FC<Props> = ({ navigation }) => {
     try {
       setStatusMsg('Tentando online na base mundial...');
       const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${data}.json`);
-      const json = await res.json();
+      const json: OpenFoodFactsResponse = await res.json();
 
       if (json.status === 1 && json.product) {
         productName = json.product.product_name_pt ?? json.product.product_name ?? '';

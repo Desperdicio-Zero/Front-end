@@ -26,6 +26,17 @@ import type { RootStackParamList } from '../../App';
 const { width } = Dimensions.get('window');
 const ONBOARDING_KEY = '@desperdicio_zero_onboarding_v2';
 
+export interface OnboardingSlide {
+    id: string;
+    icon: React.ReactElement;
+    title: string;
+    subtitle: string;
+    accent: string;
+    glowColor: string;
+    iconBg: string;
+    iconBorder: string;
+}
+
 export const markOnboardingDone = async () => {
     await AsyncStorage.setItem(ONBOARDING_KEY, 'done');
 };
@@ -35,7 +46,7 @@ export const hasSeenOnboarding = async (): Promise<boolean> => {
     return val === 'done';
 };
 
-const slides = [
+const slides: OnboardingSlide[] = [
     {
         id: '1',
         icon: <Leaf size={72} color="#22C55E" strokeWidth={1.5} />,
@@ -155,7 +166,7 @@ const OnboardingScreen: React.FC<Props> = ({ onDone, navigation }) => {
                         const index = Math.round(e.nativeEvent.contentOffset.x / width);
                         setActiveIndex(index);
                     }}
-                    renderItem={({ item }) => (
+                    renderItem={({ item }: { item: OnboardingSlide }) => (
                         <View style={styles.slide}>
                             {/* Glass icon container */}
                             <Animated.View

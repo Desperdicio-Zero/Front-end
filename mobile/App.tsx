@@ -25,6 +25,8 @@ import StatsScreen from './src/screens/StatsScreen';
 import ItemDetailScreen from './src/screens/ItemDetailScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
+import ReceiptScanScreen from './src/screens/ReceiptScanScreen';
+import DonationScreen from './src/screens/DonationScreen';
 import OnboardingScreen, { hasSeenOnboarding } from './src/screens/OnboardingScreen';
 import type { ScanResult } from './src/screens/ScannerScreen';
 import type { PantryItem } from './src/services/api';
@@ -42,6 +44,8 @@ export type RootStackParamList = {
   Scanner: undefined;
   Stats: undefined;
   ItemDetail: { item: PantryItem };
+  ReceiptScan: undefined;
+  Donation: { item: PantryItem };
   Onboarding: undefined;
 };
 
@@ -107,6 +111,16 @@ function AppStack() {
         <Stack.Screen
           name="ItemDetail"
           component={ItemDetailScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ReceiptScan"
+          component={ReceiptScanScreen}
+          options={{ headerShown: false, presentation: 'modal' }}
+        />
+        <Stack.Screen
+          name="Donation"
+          component={DonationScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen
@@ -186,6 +200,12 @@ function RootNavigator() {
       {userToken ? <AppStack /> : <AuthStack />}
     </NavigationContainer>
   );
+}
+
+declare global {
+  namespace ReactNavigation {
+    interface RootParamList extends RootStackParamList {}
+  }
 }
 
 // ---------------------------------------------------------------------------

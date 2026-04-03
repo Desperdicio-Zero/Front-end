@@ -24,7 +24,7 @@ import {
   Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BarChart2, ChefHat, Leaf, Moon, Plus, RefreshCw, Sun, Share2, LogOut, MoreVertical, HelpCircle, ChevronRight, AlertTriangle, Type, CalendarClock, Tag, Clock, CheckCircle2 } from 'lucide-react-native';
+import { BarChart2, ChefHat, Heart, Leaf, Moon, Plus, RefreshCw, Sun, Share2, LogOut, MoreVertical, HelpCircle, ChevronRight, AlertTriangle, Type, CalendarClock, Tag, Clock, CheckCircle2, type LucideIcon } from 'lucide-react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as Haptics from 'expo-haptics';
 import LottieView from 'lottie-react-native';
@@ -46,14 +46,14 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Dashboard'>;
 // ---------------------------------------------------------------------------
 export type SortKey = 'urgency' | 'name' | 'expiry' | 'category';
 
-const SORT_OPTIONS: { key: SortKey; label: string; icon: any }[] = [
+const SORT_OPTIONS: { key: SortKey; label: string; icon: LucideIcon }[] = [
   { key: 'urgency', label: 'Urgência', icon: AlertTriangle },
   { key: 'name', label: 'Nome', icon: Type },
   { key: 'expiry', label: 'Validade', icon: CalendarClock },
   { key: 'category', label: 'Categoria', icon: Tag },
 ];
 
-const URGENCY_ORDER: Record<string, number> = { Vermelho: 0, Amarelo: 1, Verde: 2 };
+const URGENCY_ORDER: Record<UrgencyStatus, number> = { Vermelho: 0, Amarelo: 1, Verde: 2 };
 
 // ---------------------------------------------------------------------------
 // Card de resumo por status — com contador animado
@@ -428,6 +428,27 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Botão de doação — aparece quando há itens urgentes */}
+      {(redCount + yellowCount) > 0 && (
+        <TouchableOpacity
+          style={[styles.donateBtn, { backgroundColor: '#F5F3FF', borderColor: '#C4B5FD' }]}
+          onPress={() => {
+            const urgentItem = items.find(
+              (i) => i.status_urgencia === 'Vermelho' || i.status_urgencia === 'Amarelo'
+            );
+            if (urgentItem) {
+              navigation.navigate('Donation', { item: urgentItem });
+            }
+          }}
+        >
+          <Heart size={18} color="#7C3AED" strokeWidth={2} />
+          <Text style={styles.donateBtnText}>
+            Doar Alimentos ({redCount + yellowCount} {(redCount + yellowCount) === 1 ? 'item' : 'itens'} elegíveis)
+          </Text>
+          <ChevronRight size={16} color="#7C3AED" strokeWidth={2} />
+        </TouchableOpacity>
+      )}
 
       {/* Lista de itens */}
       <FlatList
@@ -1003,6 +1024,23 @@ const styles = StyleSheet.create({
     height: 1,
     marginVertical: 8,
     marginHorizontal: 4,
+  },
+  donateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+  },
+  donateBtnText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#7C3AED',
   },
 });
 

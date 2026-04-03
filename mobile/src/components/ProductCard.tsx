@@ -16,7 +16,8 @@ import {
 import { Calendar, ChefHat, Edit3, Package, Tag, Trash2 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../contexts/ThemeContext'
+
 import type { PantryItem, RemovalReason, UrgencyStatus } from '../services/api';
 
 // ---------------------------------------------------------------------------

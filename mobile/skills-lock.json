@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "typescript-pro": {
+      "source": "rmyndharis/antigravity-skills",
+      "sourceType": "github",
+      "computedHash": "bef6e83ae8e3d8b49c4930fdefe3611bf8176f081853ac20127e3fafd218fc53"
+    }
+  }
+}
