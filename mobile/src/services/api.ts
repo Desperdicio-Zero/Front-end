@@ -8,7 +8,7 @@
  * Troque BASE_URL pela URL do seu servidor (ex: IP local para Expo físico).
  */
 
-import axios, { type AxiosError } from 'axios';
+import axios from 'axios';
 
 // ---------------------------------------------------------------------------
 // Tipos espelhados do backend (schemas Pydantic)
@@ -192,11 +192,105 @@ export const apiClient = axios.create({
 // Interceptor global de erros (log + re-throw para os hooks tratarem)
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
-    console.error('[API Error]', error.response?.data ?? error.message);
+  (error) => {
+    console.error('[API Error]', error?.response?.data ?? error.message);
     return Promise.reject(error);
   }
 );
+
+const mockCategories: Category[] = [
+  { id: 1, name: 'Frutas', avg_days: 5 },
+  { id: 2, name: 'Verduras', avg_days: 4 },
+  { id: 3, name: 'Laticínios', avg_days: 7 },
+  { id: 4, name: 'Carnes', avg_days: 3 },
+  { id: 5, name: 'Grãos', avg_days: 30 },
+];
+
+interface MockInventoryItem {
+  id: number;
+  name: string;
+  category_id: number;
+  expiry_date: string;
+  quantity: number;
+  unit: string;
+  expiry_estimated: boolean;
+  notes: string | null;
+}
+
+let nextInventoryId = 1;
+let nextHistoryId = 1;
+const mockInventory: MockInventoryItem[] = [];
+const mockHistory: ItemHistoryOut[] = [];
+
+function todayAtMidnight(): Date {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+function toIsoDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function daysUntil(dateIso: string): number {
+  const [year, month, day] = dateIso.split('-').map(Number);
+  const target = new Date(year, month - 1, day);
+  const diff = target.getTime() - todayAtMidnight().getTime();
+  return Math.floor(diff / DAY_MS);
+}
+
+function getUrgency(days: number): UrgencyStatus {
+  if (days <= 2) return 'Vermelho';
+  if (days <= 5) return 'Amarelo';
+  return 'Verde';
+}
+
+function categoryOrThrow(categoryId: number): Category {
+  const category = mockCategories.find((cat) => cat.id === categoryId);
+  if (!category) {
+    throw new Error('Categoria inválida.');
+  }
+  return category;
+}
+
+function toPantryItem(item: MockInventoryItem): PantryItem {
+  const category = categoryOrThrow(item.category_id);
+  const days = daysUntil(item.expiry_date);
+
+  return {
+    id: item.id,
+    name: item.name,
+    category_id: item.category_id,
+    category,
+    expiry_date: item.expiry_date,
+    quantity: item.quantity,
+    unit: item.unit,
+    expiry_estimated: item.expiry_estimated,
+    notes: item.notes,
+    days_until_expiry: days,
+    status_urgencia: getUrgency(days),
+  };
+}
+
+function urgencyRank(status: UrgencyStatus): number {
+  if (status === 'Vermelho') return 0;
+  if (status === 'Amarelo') return 1;
+  return 2;
+}
+
+function sortByUrgency(items: PantryItem[]): PantryItem[] {
+  return [...items].sort((left, right) => {
+    const urgencyDiff = urgencyRank(left.status_urgencia) - urgencyRank(right.status_urgencia);
+    if (urgencyDiff !== 0) return urgencyDiff;
+    return left.days_until_expiry - right.days_until_expiry;
+  });
+}
+
+if (USE_MOCK_API) {
+  console.info('[API] Modo mock ativo (sem backend). Defina EXPO_PUBLIC_API_URL para usar API real.');
+}
 
 // ---------------------------------------------------------------------------
 // Funções de acesso — Inventário
@@ -208,6 +302,10 @@ apiClient.interceptors.response.use(
 
 /** Retorna todas as categorias disponíveis, ordenadas por nome. */
 export const fetchCategories = async (): Promise<Category[]> => {
+  if (USE_MOCK_API) {
+    return [...mockCategories].sort((left, right) => left.name.localeCompare(right.name));
+  }
+
   const { data } = await apiClient.get<Category[]>('/categories/');
   return data;
 };
@@ -240,18 +338,49 @@ export const getCatalogItemByEan = async (ean: string): Promise<CatalogProductOu
 
 /** Retorna todos os itens, já ordenados por urgência (Vermelho → Verde). */
 export const fetchInventory = async (): Promise<PantryItem[]> => {
+  if (USE_MOCK_API) {
+    return sortByUrgency(mockInventory.map(toPantryItem));
+  }
+
   const { data } = await apiClient.get<PantryItem[]>('/inventory/');
   return data;
 };
 
 /** Busca um único item pelo ID. */
 export const fetchItemById = async (id: number): Promise<PantryItem> => {
+  if (USE_MOCK_API) {
+    const item = mockInventory.find((inventoryItem) => inventoryItem.id === id);
+    if (!item) throw new Error('Item não encontrado.');
+    return toPantryItem(item);
+  }
+
   const { data } = await apiClient.get<PantryItem>(`/inventory/${id}`);
   return data;
 };
 
 /** Cria um novo item. Se `expiry_date` for omitido, o backend estima. */
 export const createItem = async (payload: PantryItemCreate): Promise<PantryItem> => {
+  if (USE_MOCK_API) {
+    const category = categoryOrThrow(payload.category_id);
+    const computedExpiry = payload.expiry_date?.trim()
+      ? payload.expiry_date
+      : toIsoDate(new Date(Date.now() + category.avg_days * DAY_MS));
+
+    const item: MockInventoryItem = {
+      id: nextInventoryId++,
+      name: payload.name.trim(),
+      category_id: payload.category_id,
+      expiry_date: computedExpiry,
+      quantity: payload.quantity ?? 1,
+      unit: payload.unit ?? 'un',
+      expiry_estimated: !payload.expiry_date,
+      notes: payload.notes ?? null,
+    };
+
+    mockInventory.push(item);
+    return toPantryItem(item);
+  }
+
   const { data } = await apiClient.post<PantryItem>('/inventory/', payload);
   return data;
 };
@@ -289,12 +418,48 @@ export const updateItem = async (
   id: number,
   payload: PantryItemUpdate
 ): Promise<PantryItem> => {
+  if (USE_MOCK_API) {
+    const index = mockInventory.findIndex((item) => item.id === id);
+    if (index < 0) throw new Error('Item não encontrado.');
+
+    if (payload.category_id !== undefined) {
+      categoryOrThrow(payload.category_id);
+    }
+
+    const current = mockInventory[index];
+    const updated: MockInventoryItem = {
+      ...current,
+      name: payload.name !== undefined ? payload.name : current.name,
+      category_id: payload.category_id !== undefined ? payload.category_id : current.category_id,
+      expiry_date: payload.expiry_date !== undefined && payload.expiry_date !== null
+        ? payload.expiry_date
+        : payload.expiry_date === null
+          ? current.expiry_date
+          : current.expiry_date,
+      quantity: payload.quantity !== undefined ? payload.quantity : current.quantity,
+      unit: payload.unit !== undefined ? payload.unit : current.unit,
+      notes: payload.notes !== undefined ? payload.notes ?? null : current.notes,
+      expiry_estimated: payload.expiry_date !== undefined && payload.expiry_date !== null ? false : current.expiry_estimated,
+    };
+
+    mockInventory[index] = updated;
+    return toPantryItem(updated);
+  }
+
   const { data } = await apiClient.patch<PantryItem>(`/inventory/${id}`, payload);
   return data;
 };
 
 /** Remove um item pelo ID. */
 export const deleteItem = async (id: number): Promise<void> => {
+  if (USE_MOCK_API) {
+    const index = mockInventory.findIndex((item) => item.id === id);
+    if (index >= 0) {
+      mockInventory.splice(index, 1);
+    }
+    return;
+  }
+
   await apiClient.delete(`/inventory/${id}`);
 };
 
@@ -309,18 +474,81 @@ export const deleteItem = async (id: number): Promise<void> => {
 export const recordHistory = async (
   payload: ItemHistoryCreate
 ): Promise<ItemHistoryOut> => {
+  if (USE_MOCK_API) {
+    const entry: ItemHistoryOut = {
+      id: nextHistoryId++,
+      item_name: payload.item_name,
+      category_name: payload.category_name,
+      quantity: payload.quantity,
+      unit: payload.unit,
+      expiry_date: payload.expiry_date,
+      removal_reason: payload.removal_reason,
+      removed_at: new Date().toISOString(),
+      notes: payload.notes ?? null,
+    };
+    mockHistory.push(entry);
+    return entry;
+  }
+
   const { data } = await apiClient.post<ItemHistoryOut>('/history/', payload);
   return data;
 };
 
 /** Retorna as estatísticas agregadas de desperdício. */
 export const fetchStats = async (): Promise<StatsResponse> => {
+  if (USE_MOCK_API) {
+    const total_removed = mockHistory.length;
+    const total_consumed = mockHistory.filter((item) => item.removal_reason === 'consumed').length;
+    const total_expired = mockHistory.filter((item) => item.removal_reason === 'expired').length;
+    const waste_rate_percent = total_removed > 0 ? Number(((total_expired / total_removed) * 100).toFixed(1)) : 0;
+
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const monthEntries = mockHistory.filter((item) => {
+      const removedAt = new Date(item.removed_at);
+      return removedAt.getMonth() === currentMonth && removedAt.getFullYear() === currentYear;
+    });
+
+    const this_month_consumed = monthEntries.filter((item) => item.removal_reason === 'consumed').length;
+    const this_month_expired = monthEntries.filter((item) => item.removal_reason === 'expired').length;
+
+    const expiredByCategory = new Map<string, number>();
+    for (const item of mockHistory) {
+      if (item.removal_reason !== 'expired') continue;
+      expiredByCategory.set(item.category_name, (expiredByCategory.get(item.category_name) ?? 0) + 1);
+    }
+
+    const top_wasted_categories: CategoryWaste[] = [...expiredByCategory.entries()]
+      .map(([category_name, total_expired]) => ({ category_name, total_expired }))
+      .sort((left, right) => right.total_expired - left.total_expired)
+      .slice(0, 5);
+
+    return {
+      total_removed,
+      total_consumed,
+      total_expired,
+      waste_rate_percent,
+      this_month_consumed,
+      this_month_expired,
+      top_wasted_categories,
+    };
+  }
+
   const { data } = await apiClient.get<StatsResponse>('/history/stats');
   return data;
 };
 
 /** Retorna o histórico de remoções de um produto específico (busca pelo nome). */
 export const fetchHistoryByItem = async (itemName: string): Promise<ItemHistoryOut[]> => {
+  if (USE_MOCK_API) {
+    return mockHistory
+      .filter((item) => item.item_name.toLowerCase() === itemName.toLowerCase())
+      .slice(-20)
+      .reverse();
+  }
+
   const { data } = await apiClient.get<ItemHistoryOut[]>('/history/', {
     params: { item_name: itemName, limit: 20 },
   });
@@ -337,6 +565,16 @@ export const fetchHistoryByItem = async (itemName: string): Promise<ItemHistoryO
  * @param products Lista de nomes dos produtos (preferencialmente "Vermelho").
  */
 export const generateRecipe = async (products: string[]): Promise<RecipeResponse> => {
+  if (USE_MOCK_API) {
+    const normalized = products.map((product) => product.trim()).filter(Boolean);
+    const products_used = normalized.slice(0, 5);
+    const recipe = products_used.length > 0
+      ? `Receita rápida anti-desperdício:\n\nRefogue ${products_used.join(', ')} com alho, cebola e azeite. Ajuste sal e pimenta, adicione uma fonte de proteína e finalize com ervas frescas.`
+      : 'Selecione ao menos um item para gerar uma sugestão de receita.';
+
+    return { recipe, products_used };
+  }
+
   const { data } = await apiClient.post<RecipeResponse>(
     '/generate-recipe/',
     { products },
