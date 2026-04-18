@@ -37,7 +37,6 @@ import { registerForPushNotificationsAsync } from './src/services/notifications'
 // Tipagem do Stack Navigator (garante type-safety nas navegações)
 // ---------------------------------------------------------------------------
 export type RootStackParamList = {
-  Login: undefined;
   Dashboard: undefined;
   AddItem: { itemToEdit?: PantryItem; scanResult?: ScanResult };
   Scanner: undefined;
@@ -69,7 +68,7 @@ function AppStack() {
     <>
       <StatusBar style={theme.isDark ? 'light' : 'dark'} />
       <Stack.Navigator
-        initialRouteName="Login"
+        initialRouteName="Dashboard"
         screenOptions={{
           headerStyle: { backgroundColor: theme.headerBg },
           headerTintColor: theme.green,
@@ -79,11 +78,6 @@ function AppStack() {
           animation: 'slide_from_right',
         }}
       >
-        <Stack.Screen
-          name="Login"
-          component={LoginScreen}
-          options={{ headerShown: false }}
-        />
         <Stack.Screen
           name="Dashboard"
           component={DashboardScreen}
