@@ -177,7 +177,7 @@ export interface StatsResponse {
 import { Platform } from 'react-native';
 // ⚠️  TROQUE o IP abaixo pelo IP da sua máquina na rede atual.
 //    Para ver seu IP: abra o PowerShell e rode → ipconfig | findstr "IPv4"
-const MACHINE_IP = '192.168.0.13'; // ← ALTERE AQUI quando mudar de rede
+const MACHINE_IP = '192.168.15.4'; // ← ALTERE AQUI quando mudar de rede
 const DAY_MS = 24 * 60 * 60 * 1000;
 const USE_MOCK_API = false; // ou baseado em env: !process.env.EXPO_PUBLIC_API_URL
 
