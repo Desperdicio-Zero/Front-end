@@ -41,15 +41,29 @@ export async function registerForPushNotificationsAsync() {
       const projectId =
         Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
 
-      if (!projectId) {
-        // Fallback pra criar chave temporária de projeto unlinked
-        token = (await Notifications.getExpoPushTokenAsync()).data;
-      } else {
-        token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+      try {
+        if (!projectId) {
+          // Expo Go / dev: token sem projectId
+          token = (await Notifications.getExpoPushTokenAsync()).data;
+        } else {
+          // EAS (quando o projeto está corretamente linkado)
+          token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+        }
+      } catch (innerError) {
+        // Em dev é comum o projectId não existir/estar incorreto e o Expo retornar 400 EXPERIENCE_NOT_FOUND.
+        // Faz fallback sem projectId para não atrapalhar o fluxo do app.
+        try {
+          console.warn('[NOTIF] Falha ao obter token com projectId; tentando fallback sem projectId.');
+          token = (await Notifications.getExpoPushTokenAsync()).data;
+        } catch {
+          console.warn('[NOTIF] Push token indisponível neste ambiente (Expo Go/dev).');
+          return;
+        }
       }
       console.log("[NOTIF] Token do Aparelho Obtido:", token);
     } catch (e) {
-      console.error("[NOTIF] Erro ao extrair Push Token:", e);
+      console.warn('[NOTIF] Não foi possível obter Push Token (seguindo sem push).');
+      return;
     }
   } else {
     // Aparelho Físico não detectado - Para avisos Push a bateria/sistema físico é priorizado pelo Google Cloud Messaging

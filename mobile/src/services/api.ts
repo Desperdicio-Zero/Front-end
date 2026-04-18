@@ -181,9 +181,14 @@ const MACHINE_IP = '192.168.15.4'; // ← ALTERE AQUI quando mudar de rede
 const DAY_MS = 24 * 60 * 60 * 1000;
 const USE_MOCK_API = false; // ou baseado em env: !process.env.EXPO_PUBLIC_API_URL
 
-export const BASE_URL = Platform.OS === 'web'
-  ? 'http://localhost:8000'
-  : `http://${MACHINE_IP}:8000`;
+const ENV_API_URL = (process.env.EXPO_PUBLIC_API_URL ?? '').trim();
+const NORMALIZED_ENV_API_URL = ENV_API_URL ? ENV_API_URL.replace(/\/$/, '') : '';
+
+export const BASE_URL = NORMALIZED_ENV_API_URL
+  ? NORMALIZED_ENV_API_URL
+  : Platform.OS === 'web'
+    ? 'http://localhost:8000'
+    : `http://${MACHINE_IP}:8000`;
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -394,12 +399,10 @@ export interface TokenResponse {
 
 // Auth Methods
 export const login = async (email: string, password: string): Promise<TokenResponse> => {
-  // fastapi OAuth2PasswordRequestForm expects form-urlencoded
-  const params = new URLSearchParams();
-  params.append('username', email);
-  params.append('password', password);
+  // OAuth-style login: backend expects form-urlencoded (username/password)
+  const body = `username=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
 
-  const res = await apiClient.post('/auth/login', params, {
+  const res = await apiClient.post('/auth/login', body, {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
