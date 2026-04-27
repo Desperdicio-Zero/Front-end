@@ -37,6 +37,22 @@ import LottieView from 'lottie-react-native';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AddItem'>;
 
+const DEFAULT_CATEGORIES: Category[] = [
+  { id: 1, name: 'Hortifruti', avg_days: 5 },
+  { id: 2, name: 'Laticínios', avg_days: 7 },
+  { id: 3, name: 'Carnes e Aves', avg_days: 3 },
+  { id: 4, name: 'Peixes e Frutos do Mar', avg_days: 2 },
+  { id: 5, name: 'Cereais e Grãos', avg_days: 30 },
+  { id: 6, name: 'Massas e Farináceos', avg_days: 60 },
+  { id: 7, name: 'Enlatados', avg_days: 365 },
+  { id: 8, name: 'Bebidas', avg_days: 30 },
+  { id: 9, name: 'Condimentos e Temperos', avg_days: 180 },
+  { id: 10, name: 'Congelados', avg_days: 90 },
+  { id: 11, name: 'Pães e Confeitaria', avg_days: 5 },
+  { id: 12, name: 'Ovos', avg_days: 14 },
+  { id: 13, name: 'Outros', avg_days: 7 },
+];
+
 
 // ---------------------------------------------------------------------------
 // Helper para formatar data no padrão do backend (ISO 8601)
@@ -67,6 +83,15 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
   // -- Categorias dinâmicas (carregadas da API) ------------------------------
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
+
+  // Sempre oferece as 13 categorias padrão para o usuário escolher.
+  // Se a API trouxer outras (ou tiver nomes/avg_days diferentes), ela sobrescreve.
+  const availableCategories = (() => {
+    const byId = new Map<number, Category>();
+    for (const cat of DEFAULT_CATEGORIES) byId.set(cat.id, cat);
+    for (const cat of categories) byId.set(cat.id, cat);
+    return Array.from(byId.values()).sort((a, b) => a.id - b.id);
+  })();
 
   useEffect(() => {
     fetchCategories()
@@ -148,6 +173,12 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
     if (!result) return;
     if (result.name) setName(result.name);
     if (result.categoryId) setCategoryId(result.categoryId);
+
+    // Quando o scanner não consegue inferir bem e cai em "Outros",
+    // abre o seletor para o usuário escolher uma das 13 opções.
+    if (!isEditing && (result.categoryId === 13 || !result.categoryId)) {
+      setShowCategoryPicker(true);
+    }
   }, [route.params?.scanResult]);
 
   // -- Abrir scanner --------------------------------------------------------
@@ -210,7 +241,7 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
 
-  const selectedCategory = categories.find((c) => c.id === categoryId);
+  const selectedCategory = availableCategories.find((c) => c.id === categoryId);
 
   // -- Render ----------------------------------------------------------------
   return (
@@ -333,41 +364,47 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
               <View
                 style={styles.pickerList}
               >
-                {loadingCategories ? (
-                  <View style={{ padding: 16, alignItems: 'center' }}>
-                    <LottieView
-                      autoPlay
-                      loop
-                      source={{ uri: 'https://lottie.host/8c5d2b7d-e6a3-4b92-8086-4cfac552cba1/t0M9jWeGj9.json' }}
-                      style={{ width: 40, height: 40 }}
-                    />
-                  </View>
-                ) : null}
-                {categories.map((cat) => (
-                  <TouchableOpacity
-                    key={cat.id}
-                    style={[
-                      styles.pickerItem,
-                      cat.id === categoryId && styles.pickerItemSelected,
-                    ]}
-                    onPress={() => {
-                      setCategoryId(cat.id);
-                      setShowCategoryPicker(false);
-                    }}
-                  >
-                    <Text
+                <ScrollView
+                  nestedScrollEnabled
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator
+                >
+                  {loadingCategories ? (
+                    <View style={{ padding: 16, alignItems: 'center' }}>
+                      <LottieView
+                        autoPlay
+                        loop
+                        source={{ uri: 'https://lottie.host/8c5d2b7d-e6a3-4b92-8086-4cfac552cba1/t0M9jWeGj9.json' }}
+                        style={{ width: 40, height: 40 }}
+                      />
+                    </View>
+                  ) : null}
+                  {availableCategories.map((cat) => (
+                    <TouchableOpacity
+                      key={cat.id}
                       style={[
-                        styles.pickerItemText,
-                        cat.id === categoryId && styles.pickerItemTextSelected,
+                        styles.pickerItem,
+                        cat.id === categoryId && styles.pickerItemSelected,
                       ]}
+                      onPress={() => {
+                        setCategoryId(cat.id);
+                        setShowCategoryPicker(false);
+                      }}
                     >
-                      {cat.name}
-                    </Text>
-                    {cat.id === categoryId && (
-                      <Check size={14} color="#22C55E" strokeWidth={2.5} />
-                    )}
-                  </TouchableOpacity>
-                ))}
+                      <Text
+                        style={[
+                          styles.pickerItemText,
+                          cat.id === categoryId && styles.pickerItemTextSelected,
+                        ]}
+                      >
+                        {cat.name}
+                      </Text>
+                      {cat.id === categoryId && (
+                        <Check size={14} color="#22C55E" strokeWidth={2.5} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </View>
             )}
           </View>
