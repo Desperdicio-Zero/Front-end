@@ -19,7 +19,7 @@ import Toast from 'react-native-toast-message';
 
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { register as apiRegister } from '../services/api';
+import { healthCheck, register as apiRegister } from '../services/api';
 import PrimaryButton from '../components/PrimaryButton';
 import FormInput from '../components/FormInput';
 
@@ -73,10 +73,20 @@ const RegisterScreen = ({ navigation }: any) => {
         }
         setLoading(true);
         try {
+            await healthCheck();
             await apiRegister(email.trim(), password);
             Toast.show({ type: 'success', text1: 'Conta criada com sucesso!' });
             navigation.navigate('Login');
         } catch (error: any) {
+            const url = String(error?.config?.url ?? '');
+            if (url.includes('/health') || !error?.response) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Servidor indisponível',
+                    text2: 'Verifique o backend e a BASE_URL.',
+                });
+                return;
+            }
             Toast.show({
                 type: 'error',
                 text1: 'Falha no cadastro',

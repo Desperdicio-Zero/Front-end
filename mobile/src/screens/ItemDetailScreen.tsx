@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   ArrowLeft,
   Calendar,
@@ -40,6 +41,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../contexts/ThemeContext';
 import { useInventory } from '../hooks/useInventory';
 import {
+  fetchItemById,
   fetchHistoryByItem,
   type ItemHistoryOut,
   type PantryItem,
@@ -99,10 +101,33 @@ const REASON_COLOR: Record<RemovalReason, string> = {
 // Tela
 // ---------------------------------------------------------------------------
 const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { item } = route.params;
+  const { item: initialItem } = route.params;
   const { theme } = useTheme();
   const { removeItem, getRecipe } = useInventory();
+
+  const [item, setItem] = useState<PantryItem>(initialItem);
   const palette = theme.isDark ? URGENCY_DARK[item.status_urgencia] : URGENCY_LIGHT[item.status_urgencia];
+
+  const refreshItem = useCallback(async () => {
+    try {
+      const data = await fetchItemById(initialItem.id);
+      setItem(data);
+    } catch {
+      // Detalhe não essencial — mantém o item inicial.
+    }
+  }, [initialItem.id]);
+
+  // Busca o item mais atual (integra GET /inventory/:id)
+  useEffect(() => {
+    refreshItem();
+  }, [refreshItem]);
+
+  // Rebusca ao voltar para a tela (ex.: após editar no AddItem)
+  useFocusEffect(
+    useCallback(() => {
+      refreshItem();
+    }, [refreshItem])
+  );
 
   const [history, setHistory] = useState<ItemHistoryOut[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);

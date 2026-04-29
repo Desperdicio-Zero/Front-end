@@ -211,7 +211,7 @@ export interface StatsResponse {
 import { Platform } from 'react-native';
 // ⚠️  TROQUE o IP abaixo pelo IP da sua máquina na rede atual.
 //    Para ver seu IP: abra o PowerShell e rode → ipconfig | findstr "IPv4"
-const MACHINE_IP = '192.168.15.4'; // ← ALTERE AQUI quando mudar de rede
+const MACHINE_IP = '192.168.0.2'; // ← ALTERE AQUI quando mudar de rede
 const DAY_MS = 24 * 60 * 60 * 1000;
 const USE_MOCK_API = false; // ou baseado em env: !process.env.EXPO_PUBLIC_API_URL
 
@@ -430,6 +430,21 @@ export interface TokenResponse {
   access_token: string;
   token_type: string;
 }
+
+export interface HealthResponse {
+  status: 'ok' | string;
+  timestamp: string;
+}
+
+/** Ping simples para validar se o backend está online e a BASE_URL está correta. */
+export const healthCheck = async (): Promise<HealthResponse> => {
+  if (USE_MOCK_API) {
+    return { status: 'ok', timestamp: new Date().toISOString() };
+  }
+
+  const { data } = await apiClient.get<HealthResponse>('/health', { timeout: 3_000 });
+  return data;
+};
 
 // Auth Methods
 export const login = async (email: string, password: string): Promise<TokenResponse> => {
