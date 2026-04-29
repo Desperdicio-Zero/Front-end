@@ -20,7 +20,7 @@ import Toast from 'react-native-toast-message';
 
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { login as apiLogin } from '../services/api';
+import { healthCheck, login as apiLogin } from '../services/api';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../App';
 import PrimaryButton from '../components/PrimaryButton';
@@ -76,10 +76,21 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         }
         setLoading(true);
         try {
+            await healthCheck();
             const { access_token } = await apiLogin(email.trim(), password);
             await signIn(access_token);
             Toast.show({ type: 'success', text1: 'Login realizado!' });
         } catch (error: any) {
+            // Se o health-check falhou, é bem provável que seja rede/BASE_URL.
+            const url = String(error?.config?.url ?? '');
+            if (url.includes('/health') || !error?.response) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Servidor indisponível',
+                    text2: 'Verifique o backend e a BASE_URL.',
+                });
+                return;
+            }
             Toast.show({
                 type: 'error',
                 text1: 'Falha no login',
