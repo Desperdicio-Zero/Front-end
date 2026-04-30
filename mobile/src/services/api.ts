@@ -15,6 +15,10 @@ import axios from 'axios';
 // ---------------------------------------------------------------------------
 export type UrgencyStatus = 'Verde' | 'Amarelo' | 'Vermelho';
 
+function isUrgencyStatus(value: unknown): value is UrgencyStatus {
+  return value === 'Verde' || value === 'Amarelo' || value === 'Vermelho';
+}
+
 // ---------------------------------------------------------------------------
 // Mapeamento simplificado: tags/nomes do Catálogo → category_id local da Despensa
 // ---------------------------------------------------------------------------
@@ -275,17 +279,66 @@ function toIsoDate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+function extractIsoDateOnly(value: string): string {
+  // Normaliza formatos comuns:
+  // - "YYYY-MM-DD" -> mantém
+  // - "YYYY-MM-DDTHH:mm:ss.sssZ" -> extrai "YYYY-MM-DD"
+  // - "YYYY-MM-DD HH:mm:ss" -> extrai "YYYY-MM-DD"
+  const match = value.match(/\d{4}-\d{2}-\d{2}/);
+  return match?.[0] ?? value;
+}
+
 function daysUntil(dateIso: string): number {
-  const [year, month, day] = dateIso.split('-').map(Number);
-  const target = new Date(year, month - 1, day);
-  const diff = target.getTime() - todayAtMidnight().getTime();
-  return Math.floor(diff / DAY_MS);
+  const dateOnly = extractIsoDateOnly(String(dateIso ?? '')).trim();
+  const parts = dateOnly.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (parts) {
+    const year = Number(parts[1]);
+    const month = Number(parts[2]);
+    const day = Number(parts[3]);
+    const target = new Date(year, month - 1, day);
+    const diff = target.getTime() - todayAtMidnight().getTime();
+    return Math.floor(diff / DAY_MS);
+  }
+
+  // Fallback: tenta parsear como Date (se vier em outro formato)
+  const parsed = new Date(dateIso);
+  if (!Number.isNaN(parsed.getTime())) {
+    const target = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+    const diff = target.getTime() - todayAtMidnight().getTime();
+    return Math.floor(diff / DAY_MS);
+  }
+
+  return 0;
 }
 
 function getUrgency(days: number): UrgencyStatus {
   if (days <= 2) return 'Vermelho';
   if (days <= 5) return 'Amarelo';
   return 'Verde';
+}
+
+function normalizePantryItemFromApi(input: any): PantryItem {
+  const rawExpiry = String(input?.expiry_date ?? '');
+  const expiryDate = rawExpiry ? extractIsoDateOnly(rawExpiry) : '';
+  const computedDays = expiryDate ? daysUntil(expiryDate) : 0;
+  const days = typeof input?.days_until_expiry === 'number' ? input.days_until_expiry : computedDays;
+  const status = isUrgencyStatus(input?.status_urgencia)
+    ? input.status_urgencia
+    : getUrgency(days);
+
+  return {
+    id: Number(input.id),
+    name: String(input.name ?? ''),
+    category_id: Number(input.category_id),
+    category: input.category as Category,
+    expiry_date: expiryDate,
+    quantity: Number(input.quantity ?? 1),
+    unit: String(input.unit ?? 'un'),
+    expiry_estimated: input.expiry_estimated === true || input.expiry_estimated === 1 || input.expiry_estimated === 'true',
+    notes: (input.notes ?? null) as string | null,
+    days_until_expiry: days,
+    status_urgencia: status,
+  };
 }
 
 function categoryOrThrow(categoryId: number): Category {
@@ -395,8 +448,8 @@ export const fetchItemById = async (id: number): Promise<PantryItem> => {
     return toPantryItem(item);
   }
 
-  const { data } = await apiClient.get<PantryItem>(`/inventory/${id}`);
-  return data;
+  const { data } = await apiClient.get<any>(`/inventory/${id}`);
+  return normalizePantryItemFromApi(data);
 };
 
 /** Cria um novo item. Se `expiry_date` for omitido, o backend estima. */
@@ -605,6 +658,20 @@ export const fetchHistoryByItem = async (itemName: string): Promise<ItemHistoryO
 
   const { data } = await apiClient.get<ItemHistoryOut[]>('/history/', {
     params: { item_name: itemName, limit: 20 },
+  });
+  return data;
+};
+
+/** Retorna o histórico geral (timeline) de remoções do usuário. */
+export const fetchHistoryTimeline = async (limit = 20, skip = 0): Promise<ItemHistoryOut[]> => {
+  if (USE_MOCK_API) {
+    return [...mockHistory]
+      .sort((a, b) => new Date(b.removed_at).getTime() - new Date(a.removed_at).getTime())
+      .slice(skip, skip + limit);
+  }
+
+  const { data } = await apiClient.get<ItemHistoryOut[]>('/history/', {
+    params: { limit, skip },
   });
   return data;
 };

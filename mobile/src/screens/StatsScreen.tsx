@@ -23,7 +23,7 @@ import { PieChart, BarChart } from 'react-native-chart-kit';
 import LottieView from 'lottie-react-native';
 import * as Haptics from 'expo-haptics';
 
-import { fetchStats, StatsResponse } from '../services/api';
+import { fetchHistoryTimeline, fetchStats, StatsResponse, type ItemHistoryOut } from '../services/api';
 import { useTheme, AppTheme } from '../contexts/ThemeContext';
 import type { RootStackParamList } from '../../App';
 
@@ -100,15 +100,32 @@ const cardStyles = StyleSheet.create({
 const StatsScreen: React.FC<Props> = ({ navigation }) => {
   const { theme } = useTheme();
   const [stats, setStats] = useState<StatsResponse | null>(null);
+  const [timeline, setTimeline] = useState<ItemHistoryOut[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const formatRemovedAt = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
+  const reasonLabel = (reason: ItemHistoryOut['removal_reason']) => {
+    if (reason === 'consumed') return 'Consumido';
+    if (reason === 'expired') return 'Descartado';
+    if (reason === 'donated') return 'Doado';
+    return 'Outro';
+  };
+
   const load = useCallback(async () => {
     try {
       setError(null);
-      const data = await fetchStats();
-      setStats(data);
+      const [statsData, timelineData] = await Promise.all([
+        fetchStats(),
+        fetchHistoryTimeline(12, 0).catch(() => []),
+      ]);
+      setStats(statsData);
+      setTimeline(timelineData);
     } catch {
       setError('Não foi possível carregar as estatísticas. Verifique a conexão.');
     } finally {
@@ -340,6 +357,41 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
               </View>
             </>
           )}
+
+          {/* ── Timeline (GET /history/) ───────────────────────────────── */}
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Últimas remoções</Text>
+          <View style={[styles.chartCard, { backgroundColor: theme.headerBg, borderColor: theme.border, paddingVertical: 8 }]}>
+            {timeline.length === 0 ? (
+              <Text style={{ color: theme.textMuted, fontSize: 13, paddingHorizontal: 4, paddingVertical: 10 }}>
+                Nenhuma remoção recente.
+              </Text>
+            ) : (
+              timeline.map((h) => (
+                <View key={h.id} style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 10,
+                  paddingHorizontal: 4,
+                  paddingVertical: 10,
+                  borderBottomWidth: 1,
+                  borderBottomColor: theme.borderLight,
+                }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: theme.text, fontSize: 13, fontWeight: '700' }} numberOfLines={1}>
+                      {h.item_name}
+                    </Text>
+                    <Text style={{ color: theme.textMuted, fontSize: 12 }} numberOfLines={1}>
+                      {reasonLabel(h.removal_reason)} • {h.quantity} {h.unit}
+                    </Text>
+                  </View>
+                  <Text style={{ color: theme.textMuted, fontSize: 12, flexShrink: 0 }}>
+                    {formatRemovedAt(h.removed_at)}
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
 
           <View style={{ height: 40 }} />
         </ScrollView>
