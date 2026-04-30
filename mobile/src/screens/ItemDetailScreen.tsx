@@ -72,8 +72,26 @@ const URGENCY_DARK: Record<UrgencyStatus, Palette> = {
 // Helpers
 // ---------------------------------------------------------------------------
 function formatDate(iso: string): string {
-  const [year, month, day] = iso.split('-');
-  return `${day}/${month}/${year}`;
+  const match = String(iso ?? '').match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [, year, month, day] = match;
+    return `${day}/${month}/${year}`;
+  }
+  return String(iso ?? '');
+}
+
+function daysUntilFromIso(iso: string): number {
+  const match = String(iso ?? '').match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return 0;
+  const [, y, m, d] = match;
+  const year = Number(y);
+  const month = Number(m);
+  const day = Number(d);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(year, month - 1, day);
+  const diff = target.getTime() - today.getTime();
+  return Math.floor(diff / (24 * 60 * 60 * 1000));
 }
 
 function formatDatetime(isoDatetime: string): string {
@@ -106,12 +124,23 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { removeItem, getRecipe } = useInventory();
 
   const [item, setItem] = useState<PantryItem>(initialItem);
-  const palette = theme.isDark ? URGENCY_DARK[item.status_urgencia] : URGENCY_LIGHT[item.status_urgencia];
+
+  const safeUrgency: UrgencyStatus = (item?.status_urgencia && (item.status_urgencia in URGENCY_LIGHT))
+    ? item.status_urgencia
+    : 'Verde';
+  const palette = theme.isDark ? URGENCY_DARK[safeUrgency] : URGENCY_LIGHT[safeUrgency];
 
   const refreshItem = useCallback(async () => {
     try {
       const data = await fetchItemById(initialItem.id);
-      setItem(data);
+      setItem((prev) => ({
+        ...prev,
+        ...data,
+        // Se o backend não enviar relacionamentos/campos calculados, preserva do item inicial.
+        category: data.category ?? prev.category,
+        status_urgencia: data.status_urgencia ?? prev.status_urgencia,
+        days_until_expiry: typeof data.days_until_expiry === 'number' ? data.days_until_expiry : prev.days_until_expiry,
+      }));
     } catch {
       // Detalhe não essencial — mantém o item inicial.
     }
@@ -210,7 +239,9 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   // -- Helpers de exibição de validade ----------------------------------------
   const expiryLabel = () => {
-    const d = item.days_until_expiry;
+    const d = Number.isFinite(item.days_until_expiry)
+      ? item.days_until_expiry
+      : daysUntilFromIso(item.expiry_date);
     if (d < 0) return `Vencido há ${Math.abs(d)} dia(s)`;
     if (d === 0) return 'Vence hoje!';
     if (d === 1) return 'Vence amanhã';
