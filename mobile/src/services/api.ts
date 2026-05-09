@@ -716,6 +716,47 @@ export interface ParsedReceiptItem {
   category_hint: string;
 }
 
+const CATEGORY_LABEL_BY_ID: Record<number, string> = {
+  1: 'Hortifruti',
+  2: 'Laticínios',
+  3: 'Carnes e Aves',
+  4: 'Peixes e Frutos do Mar',
+  5: 'Cereais e Grãos',
+  6: 'Massas e Farináceos',
+  7: 'Enlatados',
+  8: 'Bebidas',
+  9: 'Condimentos e Temperos',
+  10: 'Congelados',
+  11: 'Pães e Confeitaria',
+  12: 'Ovos',
+  13: 'Outros',
+};
+
+function normalizeReceiptItem(raw: any): ParsedReceiptItem {
+  const name = String(raw?.name ?? '').trim() || 'Produto sem nome';
+  const quantityRaw = Number(raw?.quantity ?? 1);
+  const quantity = Number.isFinite(quantityRaw) && quantityRaw > 0 ? quantityRaw : 1;
+  const unit = String(raw?.unit ?? 'unidade').trim() || 'unidade';
+
+  const candidateId = Number(raw?.category_id ?? raw?.categoryId);
+  const fallbackCategoryId = guessCategory([
+    name,
+    String(raw?.suggested_category ?? ''),
+    String(raw?.category_hint ?? ''),
+    unit,
+  ]);
+
+  const categoryId = CATEGORY_LABEL_BY_ID[candidateId] ? candidateId : fallbackCategoryId;
+
+  return {
+    name,
+    quantity,
+    unit,
+    category_id: categoryId,
+    category_hint: CATEGORY_LABEL_BY_ID[categoryId] ?? 'Outros',
+  };
+}
+
 export interface ReceiptScanResponse {
   items_parsed: ParsedReceiptItem[];
   items_created: PantryItem[];
@@ -727,19 +768,36 @@ export interface ReceiptScanResponse {
  * Timeout estendido (60s) pois o Gemini Vision pode demorar.
  */
 export const scanReceipt = async (imageBase64: string): Promise<ReceiptScanResponse> => {
-  const { data } = await apiClient.post<ReceiptScanResponse>(
+  const { data } = await apiClient.post<any>(
     '/receipt/scan',
     { image_base64: imageBase64 },
     { timeout: 60_000 },
   );
-  return data;
+
+  // Compatibilidade com backend antigo (array direto) e novo (objeto com items_parsed)
+  const rawItems = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.items_parsed)
+      ? data.items_parsed
+      : [];
+
+  return {
+    items_parsed: rawItems.map(normalizeReceiptItem),
+    items_created: Array.isArray(data?.items_created) ? data.items_created : [],
+    raw_count: Number(data?.raw_count ?? rawItems.length),
+  };
 };
 
 /**
  * Importa os itens selecionados pelo usuário após a revisão do cupom.
  */
-export const importReceiptItems = async (items: ParsedReceiptItem[]): Promise<PantryItem[]> => {
-  const { data } = await apiClient.post<PantryItem[]>(
+export interface ReceiptImportResponse {
+  message: string;
+  count: number;
+}
+
+export const importReceiptItems = async (items: ParsedReceiptItem[]): Promise<ReceiptImportResponse> => {
+  const { data } = await apiClient.post<ReceiptImportResponse>(
     '/receipt/import',
     { items },
     { timeout: 30_000 },
