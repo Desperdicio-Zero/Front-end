@@ -142,13 +142,14 @@ const ReceiptScanScreen: React.FC<Props> = ({ navigation }) => {
     setState('importing');
     try {
       const itemsToImport: ParsedReceiptItem[] = selected.map(({ selected: _, ...rest }) => rest);
-      const created = await importReceiptItems(itemsToImport);
-      setImportedCount(created.length);
+      const result = await importReceiptItems(itemsToImport);
+      const createdCount = Number(result?.count ?? 0);
+      setImportedCount(createdCount);
       setState('done');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       Toast.show({
         type: 'success',
-        text1: `${created.length} ${created.length === 1 ? 'item importado' : 'itens importados'}!`,
+        text1: `${createdCount} ${createdCount === 1 ? 'item importado' : 'itens importados'}!`,
       });
     } catch (err: any) {
       console.error('Erro ao importar itens:', err);

@@ -58,8 +58,13 @@ function formatExpiryLabel(days: number): string {
   return `Vence em ${days} dias`;
 }
 
-function formatDate(iso: string): string {
-  const [year, month, day] = iso.split('-');
+function formatDate(iso?: string | null): string {
+  if (!iso) return '—';
+  // Some APIs may return full datetime (ISO) like '2026-05-09T00:00:00Z'
+  const datePart = iso.split('T')[0];
+  const parts = datePart.split('-');
+  if (parts.length < 3) return iso;
+  const [year, month, day] = parts;
   return `${day}/${month}/${year}`;
 }
 

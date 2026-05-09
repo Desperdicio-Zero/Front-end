@@ -65,8 +65,12 @@ function parseDateInput(input: string): string | null {
   return `${year}-${month}-${day}`;
 }
 
-function toDisplayDate(iso: string): string {
-  const [year, month, day] = iso.split('-');
+function toDisplayDate(iso?: string | null): string {
+  if (!iso) return '';
+  const datePart = iso.split('T')[0];
+  const parts = datePart.split('-');
+  if (parts.length < 3) return iso;
+  const [year, month, day] = parts;
   return `${day}/${month}/${year}`;
 }
 
