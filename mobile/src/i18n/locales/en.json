@@ -1,0 +1,434 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "back": "Back",
+    "close": "Close",
+    "error": "Error",
+    "ok": "OK",
+    "or": "or",
+    "loading": "Loading...",
+    "retry": "Try again",
+    "confirm": "Confirm",
+    "delete": "Remove",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "noResults": "No results",
+    "item_one": "item",
+    "item_other": "items",
+    "unit_one": "unit",
+    "unit_other": "units"
+  },
+  "urgency": {
+    "Verde": "On track",
+    "Amarelo": "Warning",
+    "Vermelho": "Urgent",
+    "Todos": "All"
+  },
+  "expiry": {
+    "expired_one": "Expired {{count}} day ago",
+    "expired_other": "Expired {{count}} days ago",
+    "today": "Expires today!",
+    "tomorrow": "Expires tomorrow",
+    "days_one": "Expires in {{count}} day",
+    "days_other": "Expires in {{count}} days",
+    "estimated": "(estimated)"
+  },
+  "removalReason": {
+    "consumed": "Consumed",
+    "expired": "Expired/Discarded",
+    "discarded": "Discarded",
+    "donated": "Donated",
+    "other": "Other reason"
+  },
+  "dashboard": {
+    "title": "Zero Waste",
+    "subtitle_one": "{{shown}} of {{total}} item",
+    "subtitle_other": "{{shown}} of {{total}} items",
+    "openMenu": "Open options menu",
+    "addItem": "Add new item to inventory",
+    "search": "Search item…",
+    "sortBy": {
+      "urgency": "Urgency",
+      "name": "Name",
+      "expiry": "Expiry",
+      "category": "Category"
+    },
+    "filter": {
+      "all": "All",
+      "urgent": "Urgent",
+      "warning": "Warning",
+      "ok": "On track"
+    },
+    "recipe": {
+      "urgent_one": "{{count}} urgent",
+      "urgent_other": "{{count}} urgent",
+      "allStock": "Full inventory",
+      "antiWaste": "Anti-Waste Recipe",
+      "fullStock": "Inventory Recipe",
+      "withProduct": "Recipe with this product",
+      "share": "Share Recipe (WhatsApp)",
+      "shareTitle": "Smart Recipe - Zero Waste",
+      "close": "Close",
+      "aiInfo": "Our Gastronomic AI analyzes nutrition (NOVA Group) and expiry dates. This takes a few seconds."
+    },
+    "donate": {
+      "btn_one": "Donate Food ({{count}} eligible item)",
+      "btn_other": "Donate Food ({{count}} eligible items)"
+    },
+    "empty": {
+      "title": "Empty pantry",
+      "subtitle": "Add your first items by tapping the + button",
+      "noResults": "No results",
+      "noResultsSub": "Try another search or remove the filter."
+    },
+    "deleteDialog": {
+      "title": "How was this item removed?",
+      "message": "\"{{name}}\" — select the reason:",
+      "expired": "Expired/Discarded",
+      "consumed": "Consumed"
+    },
+    "error": {
+      "removeItem": "Could not remove the item.",
+      "recipe": "Error generating recipe. Please try again."
+    },
+    "menu": {
+      "title": "Options",
+      "editProfile": "Edit Profile",
+      "report": "Waste Report",
+      "appearance": "Appearance",
+      "darkMode": "Dark Mode",
+      "lightMode": "Light Mode",
+      "howToUse": "How to use the app",
+      "signOut": "Sign Out"
+    },
+    "loadingPhrases": [
+      "Washing the pans...",
+      "Consulting the culinary masters...",
+      "Calculating nutritional value...",
+      "Mixing the perfect spices...",
+      "Creating a harmony of flavors...",
+      "Almost ready...",
+      "The digital aroma is delicious..."
+    ]
+  },
+  "login": {
+    "title": "Zero Waste",
+    "subtitle": "Manage your pantry intelligently",
+    "cardTitle": "Sign in to your account",
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "emailError": "Enter a valid email.",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "loginBtn": "Sign In",
+    "noAccount": "Don't have an account? ",
+    "register": "Sign up",
+    "secure": "Secure and encrypted",
+    "toast": {
+      "fillAll": "Please fill in all fields.",
+      "invalidEmail": "Invalid email.",
+      "success": "Logged in!",
+      "serverUnavailable": "Server unavailable",
+      "serverCheck": "Check the backend and BASE_URL.",
+      "loginFailed": "Login failed",
+      "wrongCredentials": "Email or password incorrect"
+    }
+  },
+  "register": {
+    "title": "Create Account",
+    "subtitle": "Join Zero Waste",
+    "cardTitle": "Fill in your details",
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "emailError": "Enter a valid email.",
+    "password": "Password",
+    "passwordError": "Minimum 8 characters.",
+    "confirmPassword": "Confirm Password",
+    "confirmError": "Passwords do not match.",
+    "strength": {
+      "weak": "Weak",
+      "medium": "Medium",
+      "strong": "Strong"
+    },
+    "registerBtn": "Sign Up",
+    "hasAccount": "Already have an account? ",
+    "loginLink": "Sign In",
+    "secure": "Your data is protected",
+    "toast": {
+      "fillAll": "Please fill in all fields.",
+      "invalidEmail": "Invalid email.",
+      "weakPassword": "Password must be at least 8 characters.",
+      "passwordMismatch": "Passwords do not match.",
+      "success": "Account created successfully!",
+      "serverUnavailable": "Server unavailable",
+      "serverCheck": "Check the backend and BASE_URL.",
+      "registerFailed": "Registration failed",
+      "registerError": "Error creating account"
+    }
+  },
+  "onboarding": {
+    "skip": "Skip",
+    "next": "Next →",
+    "start": "Get Started →",
+    "slides": [
+      {
+        "title": "No More Waste!",
+        "subtitle": "Register your pantry items and track expiry dates in real time with a smart traffic light system."
+      },
+      {
+        "title": "Scan Barcodes",
+        "subtitle": "Point your camera at any product and the app automatically fills in the name, category, and quantity."
+      },
+      {
+        "title": "AI-Powered Recipes",
+        "subtitle": "When something is about to expire, Google Gemini AI suggests creative recipes so you use it instead of throwing it away."
+      }
+    ]
+  },
+  "addItem": {
+    "titleNew": "New Item",
+    "titleEdit": "Edit Item",
+    "importReceipt": "Import Receipt",
+    "importReceiptSub": "Photograph the receipt and import all products",
+    "productName": "Product name *",
+    "productNamePlaceholder": "E.g.: Whole Milk",
+    "scanBarcode": "Scan barcode",
+    "noProductFound": "No product found in catalog.",
+    "category": "Category *",
+    "selectCategory": "Select",
+    "autoExpiry": "Estimate expiry automatically",
+    "autoExpiryHint": "The system will estimate the expiry based on the selected category.",
+    "expiryPlaceholder": "DD/MM/YYYY",
+    "quantity": "Quantity *",
+    "quantityPlaceholder": "1",
+    "unit": "Unit",
+    "unitPlaceholder": "unit, kg, liter…",
+    "notes": "Notes (optional)",
+    "notesPlaceholder": "E.g.: opened, frozen, preferred brand…",
+    "saveChanges": "Save Changes",
+    "addToInventory": "Add to Inventory",
+    "toast": {
+      "required": "Required field",
+      "requiredMsg": "Enter the product name.",
+      "invalidDate": "Invalid date",
+      "invalidDateMsg": "Use DD/MM/YYYY format.",
+      "invalidQty": "Invalid quantity",
+      "invalidQtyMsg": "Enter a number greater than zero.",
+      "updated": "Item updated!",
+      "updatedMsg": "{{name}} was saved successfully.",
+      "added": "Item added!",
+      "addedMsg": "{{name}} is in your pantry.",
+      "saveError": "Error saving",
+      "saveErrorMsg": "Check the server connection."
+    }
+  },
+  "itemDetail": {
+    "product": "Product",
+    "category": "Category",
+    "quantity": "Quantity",
+    "expiry": "Expiry",
+    "notes": "Notes",
+    "history": "History for this product",
+    "noHistory": "No removals recorded yet.",
+    "recipe": "Recipe",
+    "donate": "Donate",
+    "edit": "Edit",
+    "remove": "Remove",
+    "deleteDialog": {
+      "title": "How was this item removed?",
+      "message": "\"{{name}}\" — select the reason:",
+      "donate": "🤝 Donate",
+      "expired": "🗑 Expired/Discarded",
+      "consumed": "✅ Consumed"
+    },
+    "recipeModal": {
+      "title": "Recipe Suggestion",
+      "loading": "Generating AI recipe…",
+      "error": "Error generating recipe. Please try again."
+    }
+  },
+  "stats": {
+    "title": "Waste Report",
+    "loading": "Compiling report…",
+    "error": "Could not load statistics. Check your connection.",
+    "utilizationRate": "Utilization rate",
+    "approveLabel": "utiliz-\nation",
+    "rateDesc": "Of {{total}} items removed, {{consumed}} consumed and {{expired}} discarded.",
+    "rateDesc_consumed": "consumed",
+    "rateDesc_expired": "discarded",
+    "lowWaste": "Low waste!",
+    "sections": {
+      "thisMonth": "This month",
+      "historical": "Historical total",
+      "overview": "Waste Overview",
+      "topCategories": "Most wasted categories",
+      "recentRemovals": "Recent removals"
+    },
+    "metrics": {
+      "consumed": "Consumed",
+      "expired": "Expired",
+      "discarded": "Discarded",
+      "total": "total"
+    },
+    "empty": {
+      "title": "No history yet",
+      "subtitle": "When you remove items from the pantry, consumption and waste statistics will appear here."
+    },
+    "noRecentRemovals": "No recent removals.",
+    "reasons": {
+      "consumed": "Consumed",
+      "expired": "Discarded",
+      "donated": "Donated",
+      "other": "Other"
+    }
+  },
+  "donation": {
+    "header": "Reverse Donation",
+    "checking": "Checking eligibility…",
+    "locating": "Getting your location…",
+    "searching": "Searching nearby NGOs…",
+    "confirming": "Recording donation…",
+    "ineligible": {
+      "title": "Donation Not Allowed",
+      "back": "Go Back"
+    },
+    "results": {
+      "title_one": "{{count}} institution found",
+      "title_other": "{{count}} institutions found",
+      "donating": "Donating: {{name}} ({{quantity}} {{unit}})"
+    },
+    "actions": {
+      "whatsapp": "WhatsApp",
+      "call": "Call",
+      "map": "Map"
+    },
+    "confirm": {
+      "text": "I confirm that the food is within its expiry date, sealed, and in adequate condition for consumption.",
+      "btn": "✅  Donation Made",
+      "legal": "Law 14.016/2020 — The donor is exempt from civil and criminal liability."
+    },
+    "done": {
+      "title": "Thank you! 🎉",
+      "subtitle": "Your donation of {{name}} has been recorded. You helped reduce food waste!",
+      "backBtn": "Back to Inventory"
+    },
+    "permission": {
+      "denied": "Permission denied",
+      "location": "We need your location to find nearby NGOs."
+    },
+    "toast": {
+      "eligibilityError": "Failed to check eligibility.",
+      "noContact": "No contact available for this institution.",
+      "noPhone": "Phone not available.",
+      "searchFailed": "Search failed",
+      "noNearby": "Could not find nearby NGOs.",
+      "donationError": "Error recording donation."
+    }
+  },
+  "scanner": {
+    "cameraRequired": "Camera Required",
+    "cameraText": "Camera access is required to scan products.",
+    "authorizeBtn": "Authorize Camera",
+    "cancelBtn": "Cancel",
+    "aimCamera": "Aim the camera at the barcode",
+    "searching": "Searching product in central database…",
+    "searchingOnline": "Trying online in the world database...",
+    "notFound": "Product not found in any catalog!",
+    "connectionError": "Connection error while searching product.",
+    "fetchingProduct": "Fetching product…",
+    "rescan": "Scan again"
+  },
+  "receiptScan": {
+    "header": "Receipt",
+    "choose": {
+      "title": "Import Receipt",
+      "subtitle": "Take a photo or select an image of the grocery receipt. AI will extract the products automatically.",
+      "camera": "Camera",
+      "gallery": "Gallery"
+    },
+    "scanning": {
+      "analyzing": "Analyzing receipt…",
+      "aiExtracting": "Artificial intelligence is extracting the products."
+    },
+    "review": {
+      "title_one": "{{count}} product found",
+      "title_other": "{{count}} products found",
+      "subtitle": "Uncheck the items you don't want to import.",
+      "importBtn_one": "Import {{count}} item",
+      "importBtn_other": "Import {{count}} items"
+    },
+    "importing": "Importing items…",
+    "done": {
+      "title": "Import Complete!",
+      "subtitle_one": "{{count}} product was added to your inventory.",
+      "subtitle_other": "{{count}} products were added to your inventory.",
+      "backBtn": "Back to Inventory",
+      "scanAnotherBtn": "Scan Another Receipt"
+    },
+    "permission": {
+      "denied": "Permission denied",
+      "camera": "We need camera access.",
+      "gallery": "We need gallery access."
+    },
+    "toast": {
+      "noProducts": "No products found in receipt.",
+      "selectAtLeast": "Select at least one item.",
+      "readFailed": "Read failed",
+      "importFailed": "Import failed",
+      "cameraError": "Error accessing camera/gallery.",
+      "tryAgain": "Please try again.",
+      "imported_one": "{{count}} item imported!",
+      "imported_other": "{{count}} items imported!"
+    }
+  },
+  "productCard": {
+    "recipe": "Recipe",
+    "edit": "Edit",
+    "remove": "Remove",
+    "deleteDialog": {
+      "title": "How was this item removed?",
+      "message": "\"{{name}}\" — select the reason for our report:",
+      "expired": "Expired/Discarded",
+      "consumed": "Consumed"
+    },
+    "accessibility": {
+      "recipe": "View recipes using {{name}}",
+      "edit": "Edit item {{name}}",
+      "remove": "Remove {{name}} from inventory"
+    }
+  },
+  "editProfile": {
+    "title": "Edit Profile",
+    "subtitle": "Update your email or password",
+    "avatar": "Profile avatar",
+    "memberSince": "Member since {{date}}",
+    "section": {
+      "account": "Account details",
+      "security": "Security"
+    },
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "emailError": "Enter a valid email.",
+    "currentPassword": "Current password *",
+    "currentPasswordPlaceholder": "••••••••",
+    "currentPasswordHint": "Required to save any changes.",
+    "newPassword": "New password (optional)",
+    "newPasswordPlaceholder": "••••••••",
+    "newPasswordError": "Minimum 8 characters.",
+    "confirmPassword": "Confirm new password",
+    "confirmPasswordError": "Passwords do not match.",
+    "saveBtn": "Save Changes",
+    "secure": "Your data is protected with encryption",
+    "toast": {
+      "fillCurrent": "Enter your current password to save.",
+      "noChanges": "No changes provided.",
+      "invalidEmail": "Enter a valid email.",
+      "weakPassword": "New password must be at least 8 characters.",
+      "passwordMismatch": "Passwords do not match.",
+      "success": "Profile updated!",
+      "error": "Error updating profile."
+    }
+  }
+}

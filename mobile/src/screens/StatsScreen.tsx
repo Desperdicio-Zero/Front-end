@@ -26,6 +26,7 @@ import * as Haptics from 'expo-haptics';
 import { fetchHistoryTimeline, fetchStats, StatsResponse, type ItemHistoryOut } from '../services/api';
 import { useTheme, AppTheme } from '../contexts/ThemeContext';
 import type { RootStackParamList } from '../../App';
+import { useTranslation } from 'react-i18next';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Stats'>;
 
@@ -99,6 +100,7 @@ const cardStyles = StyleSheet.create({
 // ---------------------------------------------------------------------------
 const StatsScreen: React.FC<Props> = ({ navigation }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [timeline, setTimeline] = useState<ItemHistoryOut[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,10 +113,10 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const reasonLabel = (reason: ItemHistoryOut['removal_reason']) => {
-    if (reason === 'consumed') return 'Consumido';
-    if (reason === 'expired') return 'Descartado';
-    if (reason === 'donated') return 'Doado';
-    return 'Outro';
+    if (reason === 'consumed') return t('stats.reasons.consumed');
+    if (reason === 'expired') return t('stats.reasons.expired');
+    if (reason === 'donated') return t('stats.reasons.donated');
+    return t('stats.reasons.other');
   };
 
   const load = useCallback(async () => {
@@ -127,7 +129,7 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
       setStats(statsData);
       setTimeline(timelineData);
     } catch {
-      setError('Não foi possível carregar as estatísticas. Verifique a conexão.');
+      setError(t('stats.error'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -152,7 +154,7 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
             source={{ uri: 'https://lottie.host/8c5d2b7d-e6a3-4b92-8086-4cfac552cba1/t0M9jWeGj9.json' }}
             style={{ width: 120, height: 120, opacity: 0.5 }}
         />
-        <Text style={[styles.loadingText, { color: theme.textSecondary, fontFamily: theme.fonts?.medium }]}>Compilando relatório…</Text>
+        <Text style={[styles.loadingText, { color: theme.textSecondary, fontFamily: theme.fonts?.medium }]}>{t('stats.loading')}</Text>
       </SafeAreaView>
     );
   }
@@ -180,7 +182,7 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <BarChart2 size={18} color={theme.green} strokeWidth={2.5} />
-          <Text style={[styles.headerTitle, { color: theme.text, fontFamily: theme.fonts?.heading }]}>Relatório de Desperdício</Text>
+          <Text style={[styles.headerTitle, { color: theme.text, fontFamily: theme.fonts?.heading }]}>{t('stats.title')}</Text>
         </View>
         <View style={{ width: 44 }} />
       </View>
@@ -201,10 +203,9 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
             source={{ uri: 'https://lottie.host/8c5d2b7d-e6a3-4b92-8086-4cfac552cba1/t0M9jWeGj9.json' }}
             style={{ width: 150, height: 150 }}
           />
-          <Text style={[styles.emptyTitle, { color: theme.text }]}>Sem histórico ainda</Text>
+          <Text style={[styles.emptyTitle, { color: theme.text }]}>{t('stats.empty.title')}</Text>
           <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
-            Quando você remover itens da despensa, as estatísticas de consumo e
-            desperdício aparecerão aqui.
+            {t('stats.empty.subtitle')}
           </Text>
         </View>
       ) : (
@@ -225,10 +226,10 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
             {/* Circular rate indicator */}
             <View style={[styles.rateCircle, { borderColor: rateColor, shadowColor: rateColor }]}>
               <Text style={[styles.rateValue, { color: rateColor }]}>{utilizationRate}%</Text>
-              <Text style={[styles.rateLabel, { color: theme.textMuted }]}>aprovei-{'\n'}tamento</Text>
+              <Text style={[styles.rateLabel, { color: theme.textMuted }]}>{t('stats.approveLabel').replace('\n', '\n')}</Text>
             </View>
             <View style={styles.rateInfo}>
-              <Text style={[styles.rateTitle, { color: theme.text }]}>Taxa de aproveitamento</Text>
+              <Text style={[styles.rateTitle, { color: theme.text }]}>{t('stats.utilizationRate')}</Text>
               <Text style={[styles.rateDesc, { color: theme.textSecondary }]}>
                 De {stats!.total_removed} itens removidos,{' '}
                 <Text style={{ color: theme.green, fontWeight: '700' }}>
@@ -242,17 +243,17 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
               {stats!.waste_rate_percent <= 15 && (
                 <View style={[styles.badge, { backgroundColor: theme.warnBg, borderColor: theme.warnBg }]}>
                   <Award size={12} color={theme.isDark ? '#F59E0B' : '#D97706'} strokeWidth={2} />
-                  <Text style={[styles.badgeText, { color: theme.isDark ? '#F59E0B' : '#D97706', fontFamily: theme.fonts?.medium }]}>Desperdício baixo!</Text>
+                  <Text style={[styles.badgeText, { color: theme.isDark ? '#F59E0B' : '#D97706', fontFamily: theme.fonts?.medium }]}>{t('stats.lowWaste')}</Text>
                 </View>
               )}
             </View>
           </View>
 
           {/* ── Cards este mês ──────────────────────────────────────────── */}
-          <Text style={[styles.sectionTitle, { color: theme.textSecondary, fontFamily: theme.fonts?.heading }]}>Este mês</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary, fontFamily: theme.fonts?.heading }]}>{t('stats.sections.thisMonth')}</Text>
           <View style={styles.cardsRow}>
             <MetricCard
-              label="Consumidos"
+              label={t('stats.metrics.consumed')}
               value={stats!.this_month_consumed}
               color={theme.green}
               bgColor={theme.isDark ? 'rgba(34,197,94,0.15)' : '#DCFCE7'}
@@ -260,7 +261,7 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
               theme={theme}
             />
             <MetricCard
-              label="Vencidos"
+              label={t('stats.metrics.expired')}
               value={stats!.this_month_expired}
               color="#EF4444"
               bgColor={theme.isDark ? 'rgba(239,68,68,0.15)' : '#FEE2E2'}
@@ -270,21 +271,21 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
           </View>
 
           {/* ── Cards totais ────────────────────────────────────────────── */}
-          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Total histórico</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{t('stats.sections.historical')}</Text>
           <View style={styles.cardsRow}>
             <MetricCard
-              label="Consumidos"
+              label={t('stats.metrics.consumed')}
               value={stats!.total_consumed}
-              sub="total"
+              sub={t('stats.metrics.total')}
               color={theme.green}
               bgColor={theme.isDark ? 'rgba(34,197,94,0.15)' : '#DCFCE7'}
               icon={<TrendingUp size={18} color={theme.green} strokeWidth={2.5} />}
               theme={theme}
             />
             <MetricCard
-              label="Vencidos"
+              label={t('stats.metrics.expired')}
               value={stats!.total_expired}
-              sub="total"
+              sub={t('stats.metrics.total')}
               color="#EF4444"
               bgColor={theme.isDark ? 'rgba(239,68,68,0.15)' : '#FEE2E2'}
               icon={<TrendingDown size={18} color="#EF4444" strokeWidth={2.5} />}
@@ -293,19 +294,19 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
           </View>
 
           {/* ── Gráfico geral ───────────────────────────────────────────── */}
-          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Visão geral de Desperdício</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{t('stats.sections.overview')}</Text>
           <View style={[styles.chartCard, { backgroundColor: theme.headerBg, borderColor: theme.border }]}>
             <PieChart
               data={[
                 {
-                  name: 'Consumidos',
+                  name: t('stats.metrics.consumed'),
                   population: stats!.total_consumed,
                   color: theme.green,
                   legendFontColor: theme.textSecondary,
                   legendFontSize: 13,
                 },
                 {
-                  name: 'Descartados',
+                  name: t('stats.metrics.discarded'),
                   population: stats!.total_expired,
                   color: '#EF4444',
                   legendFontColor: theme.textSecondary,
@@ -326,7 +327,7 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
           {/* ── Top categorias desperdiçadas ────────────────────────────── */}
           {stats!.top_wasted_categories.length > 0 && (
             <>
-              <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Categorias mais desperdiçadas</Text>
+              <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{t('stats.sections.topCategories')}</Text>
               <View style={[styles.chartCard, { paddingRight: 32, backgroundColor: theme.headerBg, borderColor: theme.border }]}>
                 <BarChart
                   data={{
@@ -359,11 +360,11 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
           )}
 
           {/* ── Timeline (GET /history/) ───────────────────────────────── */}
-          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Últimas remoções</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{t('stats.sections.recentRemovals')}</Text>
           <View style={[styles.chartCard, { backgroundColor: theme.headerBg, borderColor: theme.border, paddingVertical: 8 }]}>
             {timeline.length === 0 ? (
               <Text style={{ color: theme.textMuted, fontSize: 13, paddingHorizontal: 4, paddingVertical: 10 }}>
-                Nenhuma remoção recente.
+                {t('stats.noRecentRemovals')}
               </Text>
             ) : (
               timeline.map((h) => (

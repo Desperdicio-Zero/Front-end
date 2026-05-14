@@ -22,6 +22,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../contexts/ThemeContext';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 const ONBOARDING_KEY = '@desperdicio_zero_onboarding_v2';
@@ -29,8 +30,8 @@ const ONBOARDING_KEY = '@desperdicio_zero_onboarding_v2';
 export interface OnboardingSlide {
     id: string;
     icon: React.ReactElement;
-    title: string;
-    subtitle: string;
+    titleKey: string;
+    subtitleKey: string;
     accent: string;
     glowColor: string;
     iconBg: string;
@@ -50,8 +51,8 @@ const slides: OnboardingSlide[] = [
     {
         id: '1',
         icon: <Leaf size={72} color="#22C55E" strokeWidth={1.5} />,
-        title: 'Chega de Desperdício!',
-        subtitle: 'Cadastre os alimentos da sua despensa e acompanhe as validades em tempo real com um semáforo inteligente.',
+        titleKey: 'onboarding.slides.0.title',
+        subtitleKey: 'onboarding.slides.0.subtitle',
         accent: '#22C55E',
         glowColor: 'rgba(34,197,94,0.25)',
         iconBg: 'rgba(34,197,94,0.12)',
@@ -60,8 +61,8 @@ const slides: OnboardingSlide[] = [
     {
         id: '2',
         icon: <ScanLine size={72} color="#38BDF8" strokeWidth={1.5} />,
-        title: 'Escaneie o Código de Barras',
-        subtitle: 'Aponte a câmera para qualquer produto e o app preenche automaticamente nome, categoria e quantidade.',
+        titleKey: 'onboarding.slides.1.title',
+        subtitleKey: 'onboarding.slides.1.subtitle',
         accent: '#38BDF8',
         glowColor: 'rgba(56,189,248,0.25)',
         iconBg: 'rgba(56,189,248,0.12)',
@@ -70,8 +71,8 @@ const slides: OnboardingSlide[] = [
     {
         id: '3',
         icon: <ChefHat size={72} color="#F59E0B" strokeWidth={1.5} />,
-        title: 'Receitas com IA',
-        subtitle: 'Quando algo estiver prestes a vencer, a IA Google Gemini sugere receitas criativas para você usar e não jogar fora.',
+        titleKey: 'onboarding.slides.2.title',
+        subtitleKey: 'onboarding.slides.2.subtitle',
         accent: '#F59E0B',
         glowColor: 'rgba(245,158,11,0.25)',
         iconBg: 'rgba(245,158,11,0.12)',
@@ -85,6 +86,7 @@ type Props = {
 
 const OnboardingScreen: React.FC<Props> = ({ onDone, navigation }) => {
     const { theme } = useTheme();
+    const { t } = useTranslation();
     const [activeIndex, setActiveIndex] = useState(0);
     const flatListRef = useRef<FlatList>(null);
     const scrollX = useRef(new Animated.Value(0)).current;
@@ -147,7 +149,7 @@ const OnboardingScreen: React.FC<Props> = ({ onDone, navigation }) => {
             <SafeAreaView style={styles.safe}>
                 {/* Skip */}
                 <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
-                    <Text style={[styles.skipText, { color: currentSlide.accent, fontFamily: theme.fonts?.medium }]}>Pular</Text>
+                    <Text style={[styles.skipText, { color: currentSlide.accent, fontFamily: theme.fonts?.medium }]}>{t('onboarding.skip')}</Text>
                 </TouchableOpacity>
 
                 {/* Slides */}
@@ -191,8 +193,8 @@ const OnboardingScreen: React.FC<Props> = ({ onDone, navigation }) => {
                                     { backgroundColor: theme.headerBg, borderColor: theme.border, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
                                 ]}
                             >
-                                <Text style={[styles.slideTitle, { color: theme.text, fontFamily: theme.fonts?.heading }]}>{item.title}</Text>
-                                <Text style={[styles.slideSubtitle, { color: theme.textSecondary, fontFamily: theme.fonts?.regular }]}>{item.subtitle}</Text>
+                                <Text style={[styles.slideTitle, { color: theme.text, fontFamily: theme.fonts?.heading }]}>{t(item.titleKey)}</Text>
+                                <Text style={[styles.slideSubtitle, { color: theme.textSecondary, fontFamily: theme.fonts?.regular }]}>{t(item.subtitleKey)}</Text>
                             </Animated.View>
                         </View>
                     )}
@@ -235,7 +237,7 @@ const OnboardingScreen: React.FC<Props> = ({ onDone, navigation }) => {
                 >
                     <View style={[styles.nextBtnInner, { backgroundColor: currentSlide.accent }]}>
                         <Text style={[styles.nextBtnText, { fontFamily: theme.fonts?.medium }]}>
-                            {activeIndex === slides.length - 1 ? 'Começar Agora →' : 'Próximo →'}
+                            {activeIndex === slides.length - 1 ? t('onboarding.start') : t('onboarding.next')}
                         </Text>
                     </View>
                 </TouchableOpacity>

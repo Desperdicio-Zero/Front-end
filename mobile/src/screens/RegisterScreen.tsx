@@ -22,6 +22,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { healthCheck, register as apiRegister } from '../services/api';
 import PrimaryButton from '../components/PrimaryButton';
 import FormInput from '../components/FormInput';
+import { useTranslation } from 'react-i18next';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -32,14 +33,15 @@ const getPasswordStrength = (pwd: string): { level: number; label: string; color
     if (/[A-Z]/.test(pwd)) score++;
     if (/[0-9]/.test(pwd)) score++;
     if (/[^A-Za-z0-9]/.test(pwd)) score++;
-    if (score <= 1) return { level: 1, label: 'Fraca', color: '#EF4444' };
-    if (score === 2) return { level: 2, label: 'Média', color: '#F59E0B' };
-    return { level: 3, label: 'Forte', color: '#22C55E' };
+    if (score <= 1) return { level: 1, label: 'register.strength.weak', color: '#EF4444' };
+    if (score === 2) return { level: 2, label: 'register.strength.medium', color: '#F59E0B' };
+    return { level: 3, label: 'register.strength.strong', color: '#22C55E' };
 };
 
 const RegisterScreen = ({ navigation }: any) => {
     const { signIn } = useAuth();
     const { theme } = useTheme();
+    const { t } = useTranslation();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -56,42 +58,34 @@ const RegisterScreen = ({ navigation }: any) => {
 
     const handleRegister = async () => {
         if (!email || !password || !confirmPassword) {
-            Toast.show({ type: 'error', text1: 'Preencha todos os campos.' });
+            Toast.show({ type: 'error', text1: t('register.toast.fillAll') });
             return;
         }
         if (!emailValid) {
-            Toast.show({ type: 'error', text1: 'E-mail inválido.' });
+            Toast.show({ type: 'error', text1: t('register.toast.invalidEmail') });
             return;
         }
         if (!passwordStrong) {
-            Toast.show({ type: 'error', text1: 'A senha precisa ter ao menos 8 caracteres.' });
+            Toast.show({ type: 'error', text1: t('register.toast.weakPassword') });
             return;
         }
         if (password !== confirmPassword) {
-            Toast.show({ type: 'error', text1: 'As senhas não coincidem.' });
+            Toast.show({ type: 'error', text1: t('register.toast.passwordMismatch') });
             return;
         }
         setLoading(true);
         try {
             await healthCheck();
             await apiRegister(email.trim(), password);
-            Toast.show({ type: 'success', text1: 'Conta criada com sucesso!' });
+            Toast.show({ type: 'success', text1: t('register.toast.success') });
             navigation.navigate('Login');
         } catch (error: any) {
             const url = String(error?.config?.url ?? '');
             if (url.includes('/health') || !error?.response) {
-                Toast.show({
-                    type: 'error',
-                    text1: 'Servidor indisponível',
-                    text2: 'Verifique o backend e a BASE_URL.',
-                });
+                Toast.show({ type: 'error', text1: t('register.toast.serverUnavailable'), text2: t('register.toast.serverCheck') });
                 return;
             }
-            Toast.show({
-                type: 'error',
-                text1: 'Falha no cadastro',
-                text2: error.response?.data?.detail || 'Erro ao criar conta',
-            });
+            Toast.show({ type: 'error', text1: t('register.toast.registerFailed'), text2: error.response?.data?.detail || t('register.toast.registerError') });
         } finally {
             setLoading(false);
         }
@@ -124,86 +118,61 @@ const RegisterScreen = ({ navigation }: any) => {
                                     <Leaf size={34} color="#22C55E" strokeWidth={2.5} />
                                 </View>
                             </View>
-                            <Text style={[styles.title, { color: theme.text, fontFamily: theme.fonts.heading }]}>Criar Conta</Text>
-                            <Text style={[styles.subtitle, { color: theme.textSecondary, fontFamily: theme.fonts.regular }]}>Junte-se ao Desperdício Zero</Text>
+                            <Text style={[styles.title, { color: theme.text, fontFamily: theme.fonts.heading }]}>{t('register.title')}</Text>
+                            <Text style={[styles.subtitle, { color: theme.textSecondary, fontFamily: theme.fonts.regular }]}>{t('register.subtitle')}</Text>
                         </View>
 
                         {/* Glass card */}
                         <View style={[styles.glassCard, { backgroundColor: theme.glassBg, borderColor: theme.glassBorder }]}>
-                            <Text style={[styles.cardTitle, { color: theme.text, fontFamily: theme.fonts.heading }]}>Preencha seus dados</Text>
+                            <Text style={[styles.cardTitle, { color: theme.text, fontFamily: theme.fonts.heading }]}>{t('register.cardTitle')}</Text>
 
-                            <FormInput
-                                label="E-mail"
-                                value={email}
-                                onChangeText={setEmail}
-                                placeholder="seu@email.com"
-                                keyboardType="email-address"
-                                autoCapitalize="none"
+                            <FormInput label={t('register.email')} value={email} onChangeText={setEmail}
+                                placeholder={t('register.emailPlaceholder')} keyboardType="email-address" autoCapitalize="none"
                                 valid={emailTouched ? emailValid : undefined}
-                                error={emailTouched && !emailValid ? 'Digite um e-mail válido.' : undefined}
+                                error={emailTouched && !emailValid ? t('register.emailError') : undefined}
                             />
 
-                            <FormInput
-                                label="Senha"
-                                value={password}
-                                onChangeText={setPassword}
-                                placeholder="••••••••"
-                                isPassword
-                                error={passwordTouched && !passwordStrong ? 'Mínimo de 8 caracteres.' : undefined}
+                            <FormInput label={t('register.password')} value={password} onChangeText={setPassword}
+                                placeholder="••••••••" isPassword
+                                error={passwordTouched && !passwordStrong ? t('register.passwordError') : undefined}
                             />
 
-                            {/* Barra de força */}
                             {passwordTouched && (
                                 <View style={styles.strengthContainer}>
                                     <View style={styles.strengthBars}>
                                         {[1, 2, 3].map(i => (
-                                            <View
-                                                key={i}
-                                                style={[
-                                                    styles.strengthBar,
-                                                    { backgroundColor: i <= strength.level ? strength.color : 'rgba(255,255,255,0.1)' },
-                                                ]}
-                                            />
+                                            <View key={i} style={[styles.strengthBar, { backgroundColor: i <= strength.level ? strength.color : 'rgba(255,255,255,0.1)' }]} />
                                         ))}
                                     </View>
-                                    <Text style={[styles.strengthLabel, { color: strength.color }]}>{strength.label}</Text>
+                                    <Text style={[styles.strengthLabel, { color: strength.color }]}>{t(strength.label)}</Text>
                                 </View>
                             )}
 
-                            <FormInput
-                                label="Confirmar Senha"
-                                value={confirmPassword}
-                                onChangeText={setConfirmPassword}
-                                placeholder="••••••••"
-                                isPassword
+                            <FormInput label={t('register.confirmPassword')} value={confirmPassword} onChangeText={setConfirmPassword}
+                                placeholder="••••••••" isPassword
                                 valid={confirmTouched ? passwordsMatch : undefined}
-                                error={confirmTouched && !passwordsMatch ? 'As senhas não coincidem.' : undefined}
+                                error={confirmTouched && !passwordsMatch ? t('register.confirmError') : undefined}
                             />
 
-                            <PrimaryButton
-                                label="Cadastrar"
-                                onPress={handleRegister}
-                                loading={loading}
-                                style={styles.btnSpacing}
-                            />
+                            <PrimaryButton label={t('register.registerBtn')} onPress={handleRegister} loading={loading} style={styles.btnSpacing} />
 
                             <View style={styles.divider}>
                                 <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
-                                <Text style={[styles.dividerText, { color: theme.textMuted }]}>ou</Text>
+                                <Text style={[styles.dividerText, { color: theme.textMuted }]}>{t('common.or')}</Text>
                                 <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
                             </View>
 
                             <View style={styles.loginContainer}>
-                                <Text style={[styles.loginText, { color: theme.textSecondary }]}>Já tem uma conta? </Text>
+                                <Text style={[styles.loginText, { color: theme.textSecondary }]}>{t('register.hasAccount')}</Text>
                                 <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                                    <Text style={[styles.loginLink, { color: theme.green }]}>Entrar</Text>
+                                    <Text style={[styles.loginLink, { color: theme.green }]}>{t('register.loginLink')}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
 
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 22, gap: 6 }}>
                             <Leaf size={14} color={theme.textMuted} />
-                            <Text style={[styles.footerText, { color: theme.textMuted, marginTop: 0, fontFamily: theme.fonts.regular }]}>Seus dados são protegidos</Text>
+                            <Text style={[styles.footerText, { color: theme.textMuted, marginTop: 0, fontFamily: theme.fonts.regular }]}>{t('register.secure')}</Text>
                         </View>
                     </ScrollView>
                 </KeyboardAvoidingView>

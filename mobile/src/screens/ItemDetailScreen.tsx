@@ -63,9 +63,9 @@ const URGENCY_LIGHT: Record<UrgencyStatus, Palette> = {
   Vermelho: { bg: 'rgba(239,68,68,0.1)', border: '#EF4444', badge: '#EF4444', text: '#FCA5A5', label: 'Urgente' },
 };
 const URGENCY_DARK: Record<UrgencyStatus, Palette> = {
-  Verde: { bg: 'rgba(34,197,94,0.1)', border: '#22C55E', badge: '#16A34A', text: '#22C55E', label: 'Em dia' },
-  Amarelo: { bg: 'rgba(234,179,8,0.1)', border: '#EAB308', badge: '#CA8A04', text: '#FDE047', label: 'Atenção' },
-  Vermelho: { bg: 'rgba(239,68,68,0.1)', border: '#EF4444', badge: '#DC2626', text: '#FCA5A5', label: 'Urgente' },
+  Verde:    { bg: 'rgba(34,197,94,0.15)',  border: '#4ADE80', badge: '#16A34A', text: '#4ADE80',  label: 'Em dia'  },
+  Amarelo:  { bg: 'rgba(234,179,8,0.15)',  border: '#FACC15', badge: '#B45309', text: '#FDE047',  label: 'Atenção' },
+  Vermelho: { bg: 'rgba(239,68,68,0.18)',  border: '#F87171', badge: '#B91C1C', text: '#FCA5A5',  label: 'Urgente' },
 };
 
 // ---------------------------------------------------------------------------
@@ -515,9 +515,9 @@ const s = StyleSheet.create({
   infoIcon: { fontSize: 15 },
   infoLabel: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
     width: 76,
-    color: 'rgba(255,255,255,0.35)',
+    color: 'rgba(255,255,255,0.65)',
   },
   infoValue: {
     flex: 1,
@@ -539,14 +539,14 @@ const s = StyleSheet.create({
   notesBox: { paddingVertical: 10 },
   notesLabel: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
     marginBottom: 4,
-    color: 'rgba(255,255,255,0.35)',
+    color: 'rgba(255,255,255,0.65)',
   },
   notesText: {
     fontSize: 14,
     lineHeight: 20,
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(255,255,255,0.80)',
   },
   actionsRow: {
     flexDirection: 'row',
@@ -609,19 +609,19 @@ const s = StyleSheet.create({
   },
   historyDetails: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.4)',
+    color: 'rgba(255,255,255,0.65)',
   },
   historyNotes: {
     fontSize: 11,
     fontStyle: 'italic',
     marginTop: 2,
-    color: 'rgba(255,255,255,0.3)',
+    color: 'rgba(255,255,255,0.55)',
   },
   historyDate: {
     fontSize: 11,
     textAlign: 'right',
     flexShrink: 0,
-    color: 'rgba(255,255,255,0.3)',
+    color: 'rgba(255,255,255,0.55)',
   },
   // ---- Modal styles ----
   modalOverlay: {

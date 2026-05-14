@@ -26,6 +26,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BarChart2, ChefHat, Heart, Leaf, Moon, Plus, RefreshCw, Sun, Share2, LogOut, MoreVertical, HelpCircle, ChevronRight, AlertTriangle, Type, CalendarClock, Tag, Clock, CheckCircle2, type LucideIcon } from 'lucide-react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import LottieView from 'lottie-react-native';
 
@@ -38,6 +39,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import type { PantryItem, RemovalReason, UrgencyStatus } from '../services/api';
 import type { RootStackParamList } from '../../App';
+import { User } from 'lucide-react-native';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Dashboard'>;
 
@@ -198,7 +200,14 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   const yellowCount = items.filter((i) => i.status_urgencia === 'Amarelo').length;
   const greenCount = items.filter((i) => i.status_urgencia === 'Verde').length;
 
-  // -- Handlers (memoizados para não re-criar a cada render) ----------------
+  // -- Auto-refresh ao retornar de qualquer tela ----------------------------
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
+
+  // -- Pull-to-refresh manual ------------------------------------------------
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await refresh();
@@ -596,6 +605,22 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
             
             <Text style={[styles.bottomSheetTitle, { color: theme.text }]}>Opções</Text>
             
+            {/* Editar Perfil */}
+            <TouchableOpacity
+              style={styles.bottomSheetItem}
+              onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('EditProfile');
+              }}
+            >
+              <View style={[styles.bottomSheetIconWrap, { backgroundColor: theme.greenBg }]}>
+                <User size={20} color={theme.green} />
+              </View>
+              <Text style={[styles.bottomSheetItemText, { color: theme.text }]}>Editar Perfil</Text>
+              <ChevronRight size={16} color={theme.textMuted} />
+            </TouchableOpacity>
+
+            {/* Relatório */}
             <TouchableOpacity 
               style={styles.bottomSheetItem}
               onPress={() => {

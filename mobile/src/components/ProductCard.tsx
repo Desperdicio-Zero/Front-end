@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Calendar, ChefHat, Edit3, Package, Tag, Trash2 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -26,15 +27,15 @@ import type { PantryItem, RemovalReason, UrgencyStatus } from '../services/api';
 type Palette = { bg: string; border: string; badge: string; text: string; label: string };
 
 const URGENCY_DARK: Record<UrgencyStatus, Palette> = {
-  Verde:    { bg: 'rgba(34,197,94,0.10)',   border: '#22C55E', badge: '#16A34A', text: '#22C55E',  label: 'Em dia'   },
-  Amarelo:  { bg: 'rgba(234,179,8,0.10)',   border: '#EAB308', badge: '#CA8A04', text: '#FDE047',  label: 'Atenção'  },
-  Vermelho: { bg: 'rgba(239,68,68,0.10)',   border: '#EF4444', badge: '#DC2626', text: '#FCA5A5',  label: 'Urgente'  },
+  Verde:    { bg: 'rgba(34,197,94,0.15)',   border: '#4ADE80', badge: '#16A34A', text: '#4ADE80',  label: 'urgency.Verde'   },
+  Amarelo:  { bg: 'rgba(234,179,8,0.15)',   border: '#FACC15', badge: '#B45309', text: '#FDE047',  label: 'urgency.Amarelo'  },
+  Vermelho: { bg: 'rgba(239,68,68,0.18)',   border: '#F87171', badge: '#B91C1C', text: '#FCA5A5',  label: 'urgency.Vermelho'  },
 };
 
 const URGENCY_LIGHT: Record<UrgencyStatus, Palette> = {
-  Verde:    { bg: '#F0FDF4', border: '#22C55E', badge: '#16A34A', text: '#15803D', label: 'Em dia'  },
-  Amarelo:  { bg: '#FEFCE8', border: '#EAB308', badge: '#CA8A04', text: '#A16207', label: 'Atenção' },
-  Vermelho: { bg: '#FFF1F2', border: '#EF4444', badge: '#DC2626', text: '#B91C1C', label: 'Urgente' },
+  Verde:    { bg: '#F0FDF4', border: '#22C55E', badge: '#16A34A', text: '#15803D', label: 'urgency.Verde'  },
+  Amarelo:  { bg: '#FEFCE8', border: '#EAB308', badge: '#CA8A04', text: '#A16207', label: 'urgency.Amarelo' },
+  Vermelho: { bg: '#FFF1F2', border: '#EF4444', badge: '#DC2626', text: '#B91C1C', label: 'urgency.Vermelho' },
 };
 
 // ---------------------------------------------------------------------------
@@ -73,6 +74,7 @@ function formatDate(iso?: string | null): string {
 // ---------------------------------------------------------------------------
 const ProductCard: React.FC<ProductCardProps> = React.memo(({ item, onEdit, onDelete, onRecipe, onPress }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const palette = theme.isDark
     ? URGENCY_DARK[item.status_urgencia]
     : URGENCY_LIGHT[item.status_urgencia];
@@ -80,12 +82,12 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ item, onEdit, onDe
   const handleDelete = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     Alert.alert(
-      'Como esse item foi removido?',
-      `"${item.name}" — selecione o motivo para o nosso relatório:`,
+      t('productCard.deleteDialog.title'),
+      `"${item.name}" — ${t('productCard.deleteDialog.message', { name: item.name }).split('—')[1]?.trim() ?? ''}`,
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Venceu/Descartado',
+          text: t('productCard.deleteDialog.expired'),
           style: 'destructive',
           onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
@@ -93,7 +95,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ item, onEdit, onDe
           },
         },
         {
-          text: 'Consumido',
+          text: t('productCard.deleteDialog.consumed'),
           style: 'default',
           onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -102,7 +104,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ item, onEdit, onDe
         },
       ]
     );
-  }, [item, onDelete]);
+  }, [item, onDelete, t]);
 
   const handleRecipe = useCallback(() => {
     Haptics.selectionAsync().catch(() => {});
@@ -132,18 +134,18 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ item, onEdit, onDe
           </Text>
         </View>
         <View style={[styles.badge, { backgroundColor: palette.badge }]}>
-          <Text style={[styles.badgeText, { fontFamily: theme.fonts?.heading }]}>{palette.label}</Text>
+          <Text style={[styles.badgeText, { fontFamily: theme.fonts?.heading }]}>{t(palette.label)}</Text>
         </View>
       </View>
 
       {/* Detalhes */}
       <View style={styles.detailsRow}>
         <View style={styles.detailItem}>
-          <Tag size={12} color={theme.textSecondary} strokeWidth={2} />
-          <Text style={[styles.detailText, { color: theme.textSecondary, fontFamily: theme.fonts?.regular }]}>{item.category.name}</Text>
+          <Tag size={12} color={theme.isDark ? 'rgba(255,255,255,0.75)' : theme.textSecondary} strokeWidth={2} />
+          <Text style={[styles.detailText, { color: theme.isDark ? 'rgba(255,255,255,0.75)' : theme.textSecondary, fontFamily: theme.fonts?.regular }]}>{item.category.name}</Text>
         </View>
         <View style={styles.detailItem}>
-          <Text style={[styles.quantityText, { color: theme.textSecondary, fontFamily: theme.fonts?.medium }]}>
+          <Text style={[styles.quantityText, { color: theme.isDark ? 'rgba(255,255,255,0.75)' : theme.textSecondary, fontFamily: theme.fonts?.medium }]}>
             {item.quantity} {item.unit}
           </Text>
         </View>
@@ -167,11 +169,11 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ item, onEdit, onDe
             backgroundColor: theme.greenBg,
           }]}
           onPress={handleRecipe}
-          accessibilityLabel={`Ver receitas usando ${item.name}`}
+          accessibilityLabel={t('productCard.accessibility.recipe', { name: item.name })}
           accessibilityRole="button"
         >
           <ChefHat size={14} color={theme.green} strokeWidth={2} />
-          <Text style={[styles.actionBtnText, { color: theme.green, fontFamily: theme.fonts?.medium }]}>Receita</Text>
+          <Text style={[styles.actionBtnText, { color: theme.green, fontFamily: theme.fonts?.medium }]}>{t('productCard.recipe')}</Text>
         </TouchableOpacity>
 
         {/* Editar */}
@@ -181,11 +183,11 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ item, onEdit, onDe
             backgroundColor: theme.isDark ? 'rgba(59,130,246,0.10)' : '#EFF6FF',
           }]}
           onPress={() => onEdit(item)}
-          accessibilityLabel={`Editar item ${item.name}`}
+          accessibilityLabel={t('productCard.accessibility.edit', { name: item.name })}
           accessibilityRole="button"
         >
           <Edit3 size={14} color="#3B82F6" strokeWidth={2} />
-          <Text style={[styles.actionBtnText, { color: '#3B82F6', fontFamily: theme.fonts?.medium }]}>Editar</Text>
+          <Text style={[styles.actionBtnText, { color: '#3B82F6', fontFamily: theme.fonts?.medium }]}>{t('productCard.edit')}</Text>
         </TouchableOpacity>
 
         {/* Remover */}
@@ -195,11 +197,11 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ item, onEdit, onDe
             backgroundColor: theme.isDark ? 'rgba(239,68,68,0.10)' : '#FFF1F2',
           }]}
           onPress={handleDelete}
-          accessibilityLabel={`Remover ${item.name} do inventário`}
+          accessibilityLabel={t('productCard.accessibility.remove', { name: item.name })}
           accessibilityRole="button"
         >
           <Trash2 size={14} color="#EF4444" strokeWidth={2} />
-          <Text style={[styles.actionBtnText, { color: '#EF4444', fontFamily: theme.fonts?.medium }]}>Remover</Text>
+          <Text style={[styles.actionBtnText, { color: '#EF4444', fontFamily: theme.fonts?.medium }]}>{t('productCard.remove')}</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -265,11 +267,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   detailText: {
-    fontSize: 12,
+    fontSize: 13,
   },
   quantityText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
   },
   expiryRow: {
     flexDirection: 'row',

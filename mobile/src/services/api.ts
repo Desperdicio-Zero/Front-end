@@ -215,7 +215,7 @@ export interface StatsResponse {
 import { Platform } from 'react-native';
 // ⚠️  TROQUE o IP abaixo pelo IP da sua máquina na rede atual.
 //    Para ver seu IP: abra o PowerShell e rode → ipconfig | findstr "IPv4"
-const MACHINE_IP = '192.168.0.2'; // ← ALTERE AQUI quando mudar de rede
+const MACHINE_IP = '192.168.18.9'; // ← ALTERE AQUI quando mudar de rede
 const DAY_MS = 24 * 60 * 60 * 1000;
 const USE_MOCK_API = false; // ou baseado em env: !process.env.EXPO_PUBLIC_API_URL
 
@@ -430,7 +430,37 @@ export const getCatalogItemByEan = async (ean: string): Promise<CatalogProductOu
 // Funções de acesso — Inventário
 // ---------------------------------------------------------------------------
 
-/** Retorna todos os itens, já ordenados por urgência (Vermelho → Verde). */
+// ---------------------------------------------------------------------------
+// Tipos e Funções — Perfil do Usuário
+// ---------------------------------------------------------------------------
+
+export interface UserProfile {
+  id: number;
+  email: string;
+  createdAt: string;
+}
+
+export interface UpdateProfilePayload {
+  currentPassword: string;
+  newEmail?: string;
+  newPassword?: string;
+}
+
+/** Retorna o perfil do usuário autenticado. */
+export const getProfile = async (): Promise<UserProfile> => {
+  const { data } = await apiClient.get<UserProfile>('/auth/me');
+  return data;
+};
+
+/** Atualiza e-mail e/ou senha do usuário. Requer a senha atual. */
+export const updateProfile = async (payload: UpdateProfilePayload): Promise<UserProfile> => {
+  const { data } = await apiClient.put<UserProfile>('/auth/me', payload);
+  return data;
+};
+
+// ---------------------------------------------------------------------------
+// Funções de acesso — Inventário real
+
 export const fetchInventory = async (): Promise<PantryItem[]> => {
   if (USE_MOCK_API) {
     return sortByUrgency(mockInventory.map(toPantryItem));

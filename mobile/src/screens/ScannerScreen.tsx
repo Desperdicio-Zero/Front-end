@@ -20,6 +20,7 @@ import * as Haptics from 'expo-haptics';
 import type { RootStackParamList } from '../../App';
 import { getCatalogItemByEan, guessCategory } from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Scanner'>;
 
@@ -40,17 +41,18 @@ export interface OpenFoodFactsResponse {
 
 const ScannerScreen: React.FC<Props> = ({ navigation }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [statusMsg, setStatusMsg] = useState('Aponte a câmera para o código de barras');
+  const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
   const handleBarCodeScanned = async ({ data }: BarcodeScanningResult) => {
     if (scanned || loading) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     setScanned(true);
     setLoading(true);
-    setStatusMsg('Buscando produto no banco central…');
+    setStatusMsg(t('scanner.searching'));
 
     let productName = '';
     let categoryId = 13;
@@ -69,7 +71,7 @@ const ScannerScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     try {
-      setStatusMsg('Tentando online na base mundial...');
+      setStatusMsg(t('scanner.searchingOnline'));
       const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${data}.json`);
       const json: OpenFoodFactsResponse = await res.json();
 
@@ -79,14 +81,14 @@ const ScannerScreen: React.FC<Props> = ({ navigation }) => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
         navigation.popTo('AddItem', { scanResult: { name: productName, categoryId, barcode: data } });
       } else {
-        setStatusMsg('Produto não encontrado em nenhum Catálogo!');
+        setStatusMsg(t('scanner.notFound'));
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
-        setTimeout(() => { setScanned(false); setLoading(false); setStatusMsg('Aponte a câmera para o código de barras'); }, 3000);
+        setTimeout(() => { setScanned(false); setLoading(false); setStatusMsg(null); }, 3000);
       }
     } catch {
-      setStatusMsg('Erro de conexão ao buscar produto.');
+      setStatusMsg(t('scanner.connectionError'));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
-      setTimeout(() => { setScanned(false); setLoading(false); setStatusMsg('Aponte a câmera para o código de barras'); }, 3000);
+      setTimeout(() => { setScanned(false); setLoading(false); setStatusMsg(null); }, 3000);
     }
   };
 
@@ -94,7 +96,7 @@ const ScannerScreen: React.FC<Props> = ({ navigation }) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setScanned(false);
     setLoading(false);
-    setStatusMsg('Aponte a câmera para o código de barras');
+    setStatusMsg(null);
   };
 
   if (!permission) return <View style={[styles.container, { backgroundColor: theme.bg }]} />;
@@ -106,15 +108,15 @@ const ScannerScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.permissionIconWrap}>
             <ScanLine size={40} color="#22C55E" strokeWidth={1.5} />
           </View>
-          <Text style={[styles.permissionTitle, { color: theme.text, fontFamily: theme.fonts?.heading }]}>Câmera necessária</Text>
+          <Text style={[styles.permissionTitle, { color: theme.text, fontFamily: theme.fonts?.heading }]}>{t('scanner.cameraRequired')}</Text>
           <Text style={[styles.permissionText, { color: theme.textSecondary, fontFamily: theme.fonts?.regular }]}>
-            É necessário autorizar o acesso à câmera para escanear produtos.
+            {t('scanner.cameraText')}
           </Text>
           <TouchableOpacity style={styles.permissionBtn} onPress={requestPermission}>
-            <Text style={[styles.permissionBtnText, { fontFamily: theme.fonts?.medium }]}>Autorizar Câmera</Text>
+            <Text style={[styles.permissionBtnText, { fontFamily: theme.fonts?.medium }]}>{t('scanner.authorizeBtn')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.popTo('AddItem', {})}>
-            <Text style={[styles.cancelBtnText, { fontFamily: theme.fonts?.medium }]}>Cancelar</Text>
+            <Text style={[styles.cancelBtnText, { fontFamily: theme.fonts?.medium }]}>{t('scanner.cancelBtn')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -155,15 +157,15 @@ const ScannerScreen: React.FC<Props> = ({ navigation }) => {
           {loading ? (
             <>
               <ActivityIndicator color="#22C55E" size="large" />
-              <Text style={[styles.loadingText, { fontFamily: theme.fonts?.medium }]}>Buscando produto…</Text>
+              <Text style={[styles.loadingText, { fontFamily: theme.fonts?.medium }]}>{t('scanner.fetchingProduct')}</Text>
             </>
           ) : (
-            <Text style={[styles.statusText, { fontFamily: theme.fonts?.medium }]}>{statusMsg}</Text>
+            <Text style={[styles.statusText, { fontFamily: theme.fonts?.medium }]}>{statusMsg ?? t('scanner.aimCamera')}</Text>
           )}
           {scanned && !loading && (
             <TouchableOpacity style={styles.rescanBtn} onPress={handleRescan}>
               <RefreshCw size={16} color="#22C55E" strokeWidth={2} />
-              <Text style={[styles.rescanBtnText, { fontFamily: theme.fonts?.medium }]}>Escanear novamente</Text>
+              <Text style={[styles.rescanBtnText, { fontFamily: theme.fonts?.medium }]}>{t('scanner.rescan')}</Text>
             </TouchableOpacity>
           )}
         </View>
