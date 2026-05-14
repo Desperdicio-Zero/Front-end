@@ -45,6 +45,7 @@ import {
 } from '../services/api';
 import type { DonationPlace, PantryItem } from '../services/api';
 import PrimaryButton from '../components/PrimaryButton';
+import { useTranslation } from 'react-i18next';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Donation'>;
 
@@ -53,6 +54,7 @@ type ScreenState = 'checking' | 'ineligible' | 'locating' | 'searching' | 'resul
 const DonationScreen: React.FC<Props> = ({ route, navigation }) => {
   const { item } = route.params;
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const s = makeStyles(theme);
 
   const [state, setState] = useState<ScreenState>('checking');
@@ -69,14 +71,14 @@ const DonationScreen: React.FC<Props> = ({ route, navigation }) => {
       try {
         const result = await checkDonationEligibility(item.id);
         if (!result.eligible) {
-          setIneligibleReason(result.reason || 'Este item não pode ser doado.');
+          setIneligibleReason(result.reason || t('donation.ineligible.title'));
           setState('ineligible');
           return;
         }
         setState('locating');
         await getLocationAndSearch();
       } catch (err: any) {
-        Toast.show({ type: 'error', text1: 'Erro', text2: 'Falha ao verificar elegibilidade.' });
+        Toast.show({ type: 'error', text1: t('common.error'), text2: t('donation.toast.eligibilityError') });
         navigation.goBack();
       }
     })();
@@ -89,7 +91,7 @@ const DonationScreen: React.FC<Props> = ({ route, navigation }) => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permissão negada', 'Precisamos da localização para encontrar ONGs próximas.');
+        Alert.alert(t('donation.permission.denied'), t('donation.permission.location'));
         navigation.goBack();
         return;
       }
@@ -130,8 +132,8 @@ const DonationScreen: React.FC<Props> = ({ route, navigation }) => {
       console.error('Erro ao buscar ONGs:', err);
       Toast.show({
         type: 'error',
-        text1: 'Falha na busca',
-        text2: err.response?.data?.detail || 'Não foi possível encontrar ONGs próximas.',
+        text1: t('donation.toast.searchFailed'),
+        text2: err.response?.data?.detail || t('donation.toast.noNearby'),
       });
       navigation.goBack();
     }
@@ -144,7 +146,7 @@ const DonationScreen: React.FC<Props> = ({ route, navigation }) => {
     // Usa whatsapp dedicado, ou fallback para telefone limpo
     const number = place.whatsapp || (place.phone ? place.phone.replace(/\D/g, '') : null);
     if (!number) {
-      Toast.show({ type: 'info', text1: 'Nenhum contato disponível para esta instituição.' });
+      Toast.show({ type: 'info', text1: t('donation.toast.noContact') });
       return;
     }
     // Garante formato brasileiro com 55
@@ -155,7 +157,7 @@ const DonationScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const callPhone = (place: DonationPlace) => {
     if (!place.phone) {
-      Toast.show({ type: 'info', text1: 'Telefone não disponível.' });
+      Toast.show({ type: 'info', text1: t('donation.toast.noPhone') });
       return;
     }
     const cleaned = place.phone.replace(/\D/g, '');
@@ -190,7 +192,7 @@ const DonationScreen: React.FC<Props> = ({ route, navigation }) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (err) {
       console.error('Erro ao registrar doação:', err);
-      Toast.show({ type: 'error', text1: 'Erro ao registrar doação.' });
+      Toast.show({ type: 'error', text1: t('donation.toast.donationError') });
       setState('results');
     }
   };
@@ -211,10 +213,10 @@ const DonationScreen: React.FC<Props> = ({ route, navigation }) => {
       <View style={[s.iconCircle, { backgroundColor: '#FFF1F2' }]}>
         <AlertTriangle size={48} color="#EF4444" strokeWidth={1.5} />
       </View>
-      <Text style={[s.mainTitle, { color: theme.text }]}>Doação Não Permitida</Text>
+      <Text style={[s.mainTitle, { color: theme.text }]}>{t('donation.ineligible.title')}</Text>
       <Text style={[s.subtitle, { color: theme.textSecondary }]}>{ineligibleReason}</Text>
       <PrimaryButton
-        label="Voltar"
+        label={t('donation.ineligible.back')}
         onPress={() => navigation.goBack()}
         style={{ marginTop: 24, width: '100%' }}
       />
@@ -225,10 +227,10 @@ const DonationScreen: React.FC<Props> = ({ route, navigation }) => {
     <View style={{ flex: 1 }}>
       <View style={s.resultsHeader}>
         <Text style={[s.resultsTitle, { color: theme.text }]}>
-          {places.length} {places.length === 1 ? 'instituição encontrada' : 'instituições encontradas'}
+          {t('donation.results.title', { count: places.length })}
         </Text>
         <Text style={[s.resultsSubtitle, { color: theme.textSecondary }]}>
-          Doando: {item.name} ({item.quantity} {item.unit})
+          {t('donation.results.donating', { name: item.name, quantity: item.quantity, unit: item.unit })}
         </Text>
       </View>
 
@@ -266,7 +268,7 @@ const DonationScreen: React.FC<Props> = ({ route, navigation }) => {
                 onPress={() => openWhatsApp(place)}
               >
                 <MessageCircle size={16} color="#16A34A" strokeWidth={2} />
-                <Text style={[s.actionText, { color: '#16A34A' }]}>WhatsApp</Text>
+                <Text style={[s.actionText, { color: '#16A34A' }]}>{t('donation.actions.whatsapp')}</Text>
               </TouchableOpacity>
               {place.phone && (
                 <TouchableOpacity
@@ -274,7 +276,7 @@ const DonationScreen: React.FC<Props> = ({ route, navigation }) => {
                   onPress={() => callPhone(place)}
                 >
                   <Phone size={16} color="#3B82F6" strokeWidth={2} />
-                  <Text style={[s.actionText, { color: '#3B82F6' }]}>Ligar</Text>
+                  <Text style={[s.actionText, { color: '#3B82F6' }]}>{t('donation.actions.call')}</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity
@@ -282,7 +284,7 @@ const DonationScreen: React.FC<Props> = ({ route, navigation }) => {
                 onPress={() => openMap(place)}
               >
                 <Navigation size={16} color="#EA580C" strokeWidth={2} />
-                <Text style={[s.actionText, { color: '#EA580C' }]}>Mapa</Text>
+                <Text style={[s.actionText, { color: '#EA580C' }]}>{t('donation.actions.map')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -303,18 +305,18 @@ const DonationScreen: React.FC<Props> = ({ route, navigation }) => {
                 {confirmed && <ShieldCheck size={14} color="#fff" strokeWidth={3} />}
               </View>
               <Text style={[s.confirmText, { color: theme.textSecondary }]}>
-                Confirmo que o alimento está dentro do prazo de validade, lacrado e em condições adequadas de consumo.
+                {t('donation.confirm.text')}
               </Text>
             </TouchableOpacity>
 
             <PrimaryButton
-              label="✅  Doação Realizada"
+              label={t('donation.confirm.btn')}
               onPress={handleMarkDonated}
               disabled={!confirmed}
               style={{ marginTop: 16 }}
             />
             <Text style={[s.legalNote, { color: theme.textMuted }]}>
-              Lei 14.016/2020 — O doador é isento de responsabilidade civil e penal.
+              {t('donation.confirm.legal')}
             </Text>
           </View>
         }
@@ -327,12 +329,12 @@ const DonationScreen: React.FC<Props> = ({ route, navigation }) => {
       <View style={[s.iconCircle, { backgroundColor: theme.greenBg }]}>
         <Heart size={56} color={theme.green} strokeWidth={1.5} />
       </View>
-      <Text style={[s.mainTitle, { color: theme.text }]}>Obrigado! 🎉</Text>
+      <Text style={[s.mainTitle, { color: theme.text }]}>{t('donation.done.title')}</Text>
       <Text style={[s.subtitle, { color: theme.textSecondary }]}>
-        Sua doação de {item.name} foi registrada. Você ajudou a reduzir o desperdício de alimentos!
+        {t('donation.done.subtitle', { name: item.name })}
       </Text>
       <PrimaryButton
-        label="Voltar ao Inventário"
+        label={t('donation.done.backBtn')}
         onPress={() => navigation.popToTop()}
         style={{ marginTop: 24, width: '100%' }}
       />
@@ -350,16 +352,16 @@ const DonationScreen: React.FC<Props> = ({ route, navigation }) => {
         >
           <ArrowLeft size={22} color={theme.green} strokeWidth={2.5} />
         </TouchableOpacity>
-        <Text style={[s.headerTitle, { color: theme.text }]}>Doação Reversa</Text>
+        <Text style={[s.headerTitle, { color: theme.text }]}>{t('donation.header')}</Text>
         <View style={{ width: 36 }} />
       </View>
 
-      {state === 'checking' && renderLoading('Verificando elegibilidade…')}
+      {state === 'checking' && renderLoading(t('donation.checking'))}
       {state === 'ineligible' && renderIneligible()}
-      {state === 'locating' && renderLoading('Obtendo sua localização…')}
-      {state === 'searching' && renderLoading('Buscando ONGs próximas…')}
+      {state === 'locating' && renderLoading(t('donation.locating'))}
+      {state === 'searching' && renderLoading(t('donation.searching'))}
       {state === 'results' && renderResults()}
-      {state === 'confirming' && renderLoading('Registrando doação…')}
+      {state === 'confirming' && renderLoading(t('donation.confirming'))}
       {state === 'done' && renderDone()}
     </SafeAreaView>
   );

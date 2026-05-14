@@ -1,0 +1,434 @@
+{
+  "common": {
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "back": "Voltar",
+    "close": "Fechar",
+    "error": "Erro",
+    "ok": "OK",
+    "or": "ou",
+    "loading": "Carregando...",
+    "retry": "Tentar novamente",
+    "confirm": "Confirmar",
+    "delete": "Remover",
+    "edit": "Editar",
+    "add": "Adicionar",
+    "search": "Buscar",
+    "noResults": "Nenhum resultado",
+    "item_one": "item",
+    "item_other": "itens",
+    "unit_one": "unidade",
+    "unit_other": "unidades"
+  },
+  "urgency": {
+    "Verde": "Em dia",
+    "Amarelo": "Atenção",
+    "Vermelho": "Urgente",
+    "Todos": "Todos"
+  },
+  "expiry": {
+    "expired_one": "Vencido há {{count}} dia",
+    "expired_other": "Vencido há {{count}} dias",
+    "today": "Vence hoje!",
+    "tomorrow": "Vence amanhã",
+    "days_one": "Vence em {{count}} dia",
+    "days_other": "Vence em {{count}} dias",
+    "estimated": "(estimada)"
+  },
+  "removalReason": {
+    "consumed": "Consumido",
+    "expired": "Venceu/Descartado",
+    "discarded": "Descartado",
+    "donated": "Doado",
+    "other": "Outro motivo"
+  },
+  "dashboard": {
+    "title": "Desperdício Zero",
+    "subtitle_one": "{{shown}} de {{total}} item",
+    "subtitle_other": "{{shown}} de {{total}} itens",
+    "openMenu": "Abrir menu de opções",
+    "addItem": "Adicionar novo item ao inventário",
+    "search": "Buscar item…",
+    "sortBy": {
+      "urgency": "Urgência",
+      "name": "Nome",
+      "expiry": "Validade",
+      "category": "Categoria"
+    },
+    "filter": {
+      "all": "Todos",
+      "urgent": "Urgente",
+      "warning": "Atenção",
+      "ok": "Em dia"
+    },
+    "recipe": {
+      "urgent_one": "{{count}} urgente",
+      "urgent_other": "{{count}} urgentes",
+      "allStock": "Todo o estoque",
+      "antiWaste": "Receita Anti-Desperdício",
+      "fullStock": "Receita do Estoque",
+      "withProduct": "Receita com este produto",
+      "share": "Compartilhar Receita (WhatsApp)",
+      "shareTitle": "Receita Inteligente - Desperdício Zero",
+      "close": "Fechar",
+      "aiInfo": "Nossa IA Gastronômica analisa nutrição (NOVA Group) e validades. Isso leva alguns segundos."
+    },
+    "donate": {
+      "btn_one": "Doar Alimentos ({{count}} item elegível)",
+      "btn_other": "Doar Alimentos ({{count}} itens elegíveis)"
+    },
+    "empty": {
+      "title": "Despensa vazia",
+      "subtitle": "Adicione seus primeiros itens tocando no botão +",
+      "noResults": "Nenhum resultado",
+      "noResultsSub": "Tente outra busca ou remova o filtro."
+    },
+    "deleteDialog": {
+      "title": "Como esse item foi removido?",
+      "message": "\"{{name}}\" — selecione o motivo:",
+      "expired": "Venceu/Descartado",
+      "consumed": "Consumido"
+    },
+    "error": {
+      "removeItem": "Não foi possível remover o item.",
+      "recipe": "Erro ao gerar receita. Tente novamente."
+    },
+    "menu": {
+      "title": "Opções",
+      "editProfile": "Editar Perfil",
+      "report": "Relatório de Desperdício",
+      "appearance": "Aparência",
+      "darkMode": "Modo Escuro",
+      "lightMode": "Modo Claro",
+      "howToUse": "Como usar o app",
+      "signOut": "Sair da Conta"
+    },
+    "loadingPhrases": [
+      "Lavando as panelas...",
+      "Consultando os mestres da culinária...",
+      "Calculando o valor nutricional...",
+      "Misturando os temperos perfeitos...",
+      "Criando uma harmonia de sabores...",
+      "Está quase pronto...",
+      "O aroma digital está delicioso..."
+    ]
+  },
+  "login": {
+    "title": "Desperdício Zero",
+    "subtitle": "Gerencie sua despensa de forma inteligente",
+    "cardTitle": "Entrar na sua conta",
+    "email": "E-mail",
+    "emailPlaceholder": "seu@email.com",
+    "emailError": "Digite um e-mail válido.",
+    "password": "Senha",
+    "forgotPassword": "Esqueceu a senha?",
+    "loginBtn": "Entrar",
+    "noAccount": "Ainda não tem conta? ",
+    "register": "Cadastre-se",
+    "secure": "Seguro e criptografado",
+    "toast": {
+      "fillAll": "Preencha todos os campos.",
+      "invalidEmail": "E-mail inválido.",
+      "success": "Login realizado!",
+      "serverUnavailable": "Servidor indisponível",
+      "serverCheck": "Verifique o backend e a BASE_URL.",
+      "loginFailed": "Falha no login",
+      "wrongCredentials": "E-mail ou senha incorretos"
+    }
+  },
+  "register": {
+    "title": "Criar Conta",
+    "subtitle": "Junte-se ao Desperdício Zero",
+    "cardTitle": "Preencha seus dados",
+    "email": "E-mail",
+    "emailPlaceholder": "seu@email.com",
+    "emailError": "Digite um e-mail válido.",
+    "password": "Senha",
+    "passwordError": "Mínimo de 8 caracteres.",
+    "confirmPassword": "Confirmar Senha",
+    "confirmError": "As senhas não coincidem.",
+    "strength": {
+      "weak": "Fraca",
+      "medium": "Média",
+      "strong": "Forte"
+    },
+    "registerBtn": "Cadastrar",
+    "hasAccount": "Já tem uma conta? ",
+    "loginLink": "Entrar",
+    "secure": "Seus dados são protegidos",
+    "toast": {
+      "fillAll": "Preencha todos os campos.",
+      "invalidEmail": "E-mail inválido.",
+      "weakPassword": "A senha precisa ter ao menos 8 caracteres.",
+      "passwordMismatch": "As senhas não coincidem.",
+      "success": "Conta criada com sucesso!",
+      "serverUnavailable": "Servidor indisponível",
+      "serverCheck": "Verifique o backend e a BASE_URL.",
+      "registerFailed": "Falha no cadastro",
+      "registerError": "Erro ao criar conta"
+    }
+  },
+  "onboarding": {
+    "skip": "Pular",
+    "next": "Próximo →",
+    "start": "Começar Agora →",
+    "slides": [
+      {
+        "title": "Chega de Desperdício!",
+        "subtitle": "Cadastre os alimentos da sua despensa e acompanhe as validades em tempo real com um semáforo inteligente."
+      },
+      {
+        "title": "Escaneie o Código de Barras",
+        "subtitle": "Aponte a câmera para qualquer produto e o app preenche automaticamente nome, categoria e quantidade."
+      },
+      {
+        "title": "Receitas com IA",
+        "subtitle": "Quando algo estiver prestes a vencer, a IA Google Gemini sugere receitas criativas para você usar e não jogar fora."
+      }
+    ]
+  },
+  "addItem": {
+    "titleNew": "Novo Item",
+    "titleEdit": "Editar Item",
+    "importReceipt": "Importar Nota Fiscal",
+    "importReceiptSub": "Fotografe o cupom e importe todos os produtos",
+    "productName": "Nome do produto *",
+    "productNamePlaceholder": "Ex: Leite Integral",
+    "scanBarcode": "Escanear código de barras",
+    "noProductFound": "Nenhum produto encontrado no catálogo.",
+    "category": "Categoria *",
+    "selectCategory": "Selecionar",
+    "autoExpiry": "Estimar validade automaticamente",
+    "autoExpiryHint": "O sistema estimará a validade com base na categoria selecionada.",
+    "expiryPlaceholder": "DD/MM/AAAA",
+    "quantity": "Quantidade *",
+    "quantityPlaceholder": "1",
+    "unit": "Unidade",
+    "unitPlaceholder": "unidade, kg, litro…",
+    "notes": "Observações (opcional)",
+    "notesPlaceholder": "Ex: aberto, congelado, marca preferida…",
+    "saveChanges": "Salvar Alterações",
+    "addToInventory": "Adicionar ao Inventário",
+    "toast": {
+      "required": "Campo obrigatório",
+      "requiredMsg": "Informe o nome do produto.",
+      "invalidDate": "Data inválida",
+      "invalidDateMsg": "Use o formato DD/MM/AAAA.",
+      "invalidQty": "Quantidade inválida",
+      "invalidQtyMsg": "Informe um número maior que zero.",
+      "updated": "Item atualizado!",
+      "updatedMsg": "{{name}} foi salvo com sucesso.",
+      "added": "Item adicionado!",
+      "addedMsg": "{{name}} está na sua despensa.",
+      "saveError": "Erro ao salvar",
+      "saveErrorMsg": "Verifique a conexão com o servidor."
+    }
+  },
+  "itemDetail": {
+    "product": "Produto",
+    "category": "Categoria",
+    "quantity": "Quantidade",
+    "expiry": "Validade",
+    "notes": "Observações",
+    "history": "Histórico deste produto",
+    "noHistory": "Nenhuma remoção registrada ainda.",
+    "recipe": "Receita",
+    "donate": "Doar",
+    "edit": "Editar",
+    "remove": "Remover",
+    "deleteDialog": {
+      "title": "Como esse item foi removido?",
+      "message": "\"{{name}}\" — selecione o motivo:",
+      "donate": "🤝 Doar",
+      "expired": "🗑 Venceu/Descartado",
+      "consumed": "✅ Consumido"
+    },
+    "recipeModal": {
+      "title": "Sugestão de Receita",
+      "loading": "Gerando receita com IA…",
+      "error": "Erro ao gerar receita. Tente novamente."
+    }
+  },
+  "stats": {
+    "title": "Relatório de Desperdício",
+    "loading": "Compilando relatório…",
+    "error": "Não foi possível carregar as estatísticas. Verifique a conexão.",
+    "utilizationRate": "Taxa de aproveitamento",
+    "approveLabel": "aprovei-\ntamento",
+    "rateDesc_consumed": "consumidos",
+    "rateDesc_expired": "descartados",
+    "rateDesc": "De {{total}} itens removidos, {{consumed}} consumidos e {{expired}} descartados.",
+    "lowWaste": "Desperdício baixo!",
+    "sections": {
+      "thisMonth": "Este mês",
+      "historical": "Total histórico",
+      "overview": "Visão geral de Desperdício",
+      "topCategories": "Categorias mais desperdiçadas",
+      "recentRemovals": "Últimas remoções"
+    },
+    "metrics": {
+      "consumed": "Consumidos",
+      "expired": "Vencidos",
+      "discarded": "Descartados",
+      "total": "total"
+    },
+    "empty": {
+      "title": "Sem histórico ainda",
+      "subtitle": "Quando você remover itens da despensa, as estatísticas de consumo e desperdício aparecerão aqui."
+    },
+    "noRecentRemovals": "Nenhuma remoção recente.",
+    "reasons": {
+      "consumed": "Consumido",
+      "expired": "Descartado",
+      "donated": "Doado",
+      "other": "Outro"
+    }
+  },
+  "donation": {
+    "header": "Doação Reversa",
+    "checking": "Verificando elegibilidade…",
+    "locating": "Obtendo sua localização…",
+    "searching": "Buscando ONGs próximas…",
+    "confirming": "Registrando doação…",
+    "ineligible": {
+      "title": "Doação Não Permitida",
+      "back": "Voltar"
+    },
+    "results": {
+      "title_one": "{{count}} instituição encontrada",
+      "title_other": "{{count}} instituições encontradas",
+      "donating": "Doando: {{name}} ({{quantity}} {{unit}})"
+    },
+    "actions": {
+      "whatsapp": "WhatsApp",
+      "call": "Ligar",
+      "map": "Mapa"
+    },
+    "confirm": {
+      "text": "Confirmo que o alimento está dentro do prazo de validade, lacrado e em condições adequadas de consumo.",
+      "btn": "✅  Doação Realizada",
+      "legal": "Lei 14.016/2020 — O doador é isento de responsabilidade civil e penal."
+    },
+    "done": {
+      "title": "Obrigado! 🎉",
+      "subtitle": "Sua doação de {{name}} foi registrada. Você ajudou a reduzir o desperdício de alimentos!",
+      "backBtn": "Voltar ao Inventário"
+    },
+    "permission": {
+      "denied": "Permissão negada",
+      "location": "Precisamos da localização para encontrar ONGs próximas."
+    },
+    "toast": {
+      "eligibilityError": "Falha ao verificar elegibilidade.",
+      "noContact": "Nenhum contato disponível para esta instituição.",
+      "noPhone": "Telefone não disponível.",
+      "searchFailed": "Falha na busca",
+      "noNearby": "Não foi possível encontrar ONGs próximas.",
+      "donationError": "Erro ao registrar doação."
+    }
+  },
+  "scanner": {
+    "cameraRequired": "Câmera necessária",
+    "cameraText": "É necessário autorizar o acesso à câmera para escanear produtos.",
+    "authorizeBtn": "Autorizar Câmera",
+    "cancelBtn": "Cancelar",
+    "aimCamera": "Aponte a câmera para o código de barras",
+    "searching": "Buscando produto no banco central…",
+    "searchingOnline": "Tentando online na base mundial...",
+    "notFound": "Produto não encontrado em nenhum Catálogo!",
+    "connectionError": "Erro de conexão ao buscar produto.",
+    "fetchingProduct": "Buscando produto…",
+    "rescan": "Escanear novamente"
+  },
+  "receiptScan": {
+    "header": "Nota Fiscal",
+    "choose": {
+      "title": "Importar Nota Fiscal",
+      "subtitle": "Fotografe ou selecione uma imagem do cupom fiscal do mercado. A IA vai extrair os produtos automaticamente.",
+      "camera": "Câmera",
+      "gallery": "Galeria"
+    },
+    "scanning": {
+      "analyzing": "Analisando cupom fiscal…",
+      "aiExtracting": "A inteligência artificial está extraindo os produtos."
+    },
+    "review": {
+      "title_one": "{{count}} produto encontrado",
+      "title_other": "{{count}} produtos encontrados",
+      "subtitle": "Desmarque os itens que não deseja importar.",
+      "importBtn_one": "Importar {{count}} item",
+      "importBtn_other": "Importar {{count}} itens"
+    },
+    "importing": "Importando itens…",
+    "done": {
+      "title": "Importação Concluída!",
+      "subtitle_one": "{{count}} produto foi adicionado ao seu inventário.",
+      "subtitle_other": "{{count}} produtos foram adicionados ao seu inventário.",
+      "backBtn": "Voltar ao Inventário",
+      "scanAnotherBtn": "Escanear Outro Cupom"
+    },
+    "permission": {
+      "denied": "Permissão negada",
+      "camera": "Precisamos de acesso à câmera.",
+      "gallery": "Precisamos de acesso à galeria."
+    },
+    "toast": {
+      "noProducts": "Nenhum produto encontrado no cupom.",
+      "selectAtLeast": "Selecione ao menos um item.",
+      "readFailed": "Falha na leitura",
+      "importFailed": "Falha na importação",
+      "cameraError": "Erro ao acessar câmera/galeria.",
+      "tryAgain": "Tente novamente.",
+      "imported_one": "{{count}} item importado!",
+      "imported_other": "{{count}} itens importados!"
+    }
+  },
+  "productCard": {
+    "recipe": "Receita",
+    "edit": "Editar",
+    "remove": "Remover",
+    "deleteDialog": {
+      "title": "Como esse item foi removido?",
+      "message": "\"{{name}}\" — selecione o motivo para o nosso relatório:",
+      "expired": "Venceu/Descartado",
+      "consumed": "Consumido"
+    },
+    "accessibility": {
+      "recipe": "Ver receitas usando {{name}}",
+      "edit": "Editar item {{name}}",
+      "remove": "Remover {{name}} do inventário"
+    }
+  },
+  "editProfile": {
+    "title": "Editar Perfil",
+    "subtitle": "Atualize seu e-mail ou senha",
+    "avatar": "Avatar do perfil",
+    "memberSince": "Membro desde {{date}}",
+    "section": {
+      "account": "Dados da conta",
+      "security": "Segurança"
+    },
+    "email": "E-mail",
+    "emailPlaceholder": "seu@email.com",
+    "emailError": "Digite um e-mail válido.",
+    "currentPassword": "Senha atual *",
+    "currentPasswordPlaceholder": "••••••••",
+    "currentPasswordHint": "Obrigatória para salvar qualquer alteração.",
+    "newPassword": "Nova senha (opcional)",
+    "newPasswordPlaceholder": "••••••••",
+    "newPasswordError": "Mínimo de 8 caracteres.",
+    "confirmPassword": "Confirmar nova senha",
+    "confirmPasswordError": "As senhas não coincidem.",
+    "saveBtn": "Salvar Alterações",
+    "secure": "Seus dados são protegidos com criptografia",
+    "toast": {
+      "fillCurrent": "Informe sua senha atual para salvar.",
+      "noChanges": "Nenhuma alteração informada.",
+      "invalidEmail": "Digite um e-mail válido.",
+      "weakPassword": "A nova senha precisa ter ao menos 8 caracteres.",
+      "passwordMismatch": "As senhas não coincidem.",
+      "success": "Perfil atualizado!",
+      "error": "Erro ao atualizar perfil."
+    }
+  }
+}

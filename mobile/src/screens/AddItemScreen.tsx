@@ -34,6 +34,7 @@ import type { Category, PantryItemCreate, PantryItemUpdate, CatalogProductOut } 
 import * as Haptics from 'expo-haptics';
 import Toast from 'react-native-toast-message';
 import LottieView from 'lottie-react-native';
+import { useTranslation } from 'react-i18next';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AddItem'>;
 
@@ -82,6 +83,7 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
   const isEditing = !!itemToEdit;
   const { addItem, editItem, saving } = useInventory();
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const styles = makeStyles(theme);
 
   // -- Categorias dinâmicas (carregadas da API) ------------------------------
@@ -193,20 +195,20 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
   // -- Validação e submissão -------------------------------------------------
   const handleSubmit = async () => {
     if (!name.trim()) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => { });
-      Toast.show({ type: 'error', text1: 'Campo obrigatório', text2: 'Informe o nome do produto.' });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+      Toast.show({ type: 'error', text1: t('addItem.toast.required'), text2: t('addItem.toast.requiredMsg') });
       return;
     }
     const parsedDate = parseDateInput(expiryInput);
     if (!useAutoExpiry && !parsedDate) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => { });
-      Toast.show({ type: 'error', text1: 'Data inválida', text2: 'Use o formato DD/MM/AAAA.' });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+      Toast.show({ type: 'error', text1: t('addItem.toast.invalidDate'), text2: t('addItem.toast.invalidDateMsg') });
       return;
     }
     const parsedQty = parseFloat(quantity.replace(',', '.'));
     if (isNaN(parsedQty) || parsedQty <= 0) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => { });
-      Toast.show({ type: 'error', text1: 'Quantidade inválida', text2: 'Informe um número maior que zero.' });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+      Toast.show({ type: 'error', text1: t('addItem.toast.invalidQty'), text2: t('addItem.toast.invalidQtyMsg') });
       return;
     }
 
@@ -223,8 +225,8 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
           notes: notes.trim() || null,
         };
         await editItem(itemToEdit.id, payload);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
-        Toast.show({ type: 'success', text1: 'Item atualizado!', text2: `${name.trim()} foi salvo com sucesso.` });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        Toast.show({ type: 'success', text1: t('addItem.toast.updated'), text2: t('addItem.toast.updatedMsg', { name: name.trim() }) });
       } else {
         const payload: PantryItemCreate = {
           name: name.trim(),
@@ -235,13 +237,13 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
           notes: notes.trim() || null,
         };
         await addItem(payload);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
-        Toast.show({ type: 'success', text1: 'Item adicionado!', text2: `${name.trim()} está na sua despensa.` });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        Toast.show({ type: 'success', text1: t('addItem.toast.added'), text2: t('addItem.toast.addedMsg', { name: name.trim() }) });
       }
       navigation.goBack();
     } catch {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => { });
-      Toast.show({ type: 'error', text1: 'Erro ao salvar', text2: 'Verifique a conexão com o servidor.' });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      Toast.show({ type: 'error', text1: t('addItem.toast.saveError'), text2: t('addItem.toast.saveErrorMsg') });
     }
   };
 
@@ -264,7 +266,7 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
         >
           {/* Título */}
           <Text style={[styles.screenTitle, { fontFamily: theme.fonts?.heading }]}>
-            {isEditing ? 'Editar Item' : 'Novo Item'}
+            {isEditing ? t('addItem.titleEdit') : t('addItem.titleNew')}
           </Text>
 
           {/* Botão de importar nota fiscal */}
@@ -276,9 +278,9 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
             >
               <FileText size={20} color={theme.green} strokeWidth={2} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.receiptBtnTitle, { color: theme.green }]}>Importar Nota Fiscal</Text>
+                <Text style={[styles.receiptBtnTitle, { color: theme.green }]}>{t('addItem.importReceipt')}</Text>
                 <Text style={[styles.receiptBtnSubtitle, { color: theme.textSecondary }]}>
-                  Fotografe o cupom e importe todos os produtos
+                  {t('addItem.importReceiptSub')}
                 </Text>
               </View>
               <ChevronDown size={18} color={theme.green} strokeWidth={2} style={{ transform: [{ rotate: '-90deg' }] }} />
@@ -287,7 +289,7 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
 
           {/* Campo: Nome + Typeahead */}
           <View style={[styles.fieldGroup, { zIndex: 50 }]}>
-            <Text style={styles.label}>Nome do produto *</Text>
+            <Text style={styles.label}>{t('addItem.productName')}</Text>
             <View style={styles.nameRow}>
               <TextInput
                 style={[styles.input, { flex: 1 }]}
@@ -297,7 +299,7 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
                   setShowSuggestions(true);
                 }}
                 onFocus={() => setShowSuggestions(true)}
-                placeholder="Ex: Leite Integral"
+                placeholder={t('addItem.productNamePlaceholder')}
                 placeholderTextColor={theme.textMuted}
                 maxLength={150}
                 returnKeyType="next"
@@ -305,8 +307,7 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
               <TouchableOpacity
                 style={styles.scanBtn}
                 onPress={handleOpenScanner}
-                accessibilityLabel="Escanear código de barras"
-              >
+                accessibilityLabel={t('addItem.scanBarcode')}>
                 <ScanLine size={22} color="#16A34A" strokeWidth={2} />
               </TouchableOpacity>
             </View>
@@ -345,7 +346,7 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
                 ) : (
                   <View style={styles.suggestionItem}>
                     <Text style={[styles.suggestionText, { color: theme.textMuted, fontStyle: 'italic' }]}>
-                      Nenhum produto encontrado no catálogo.
+                      {t('addItem.noProductFound')}
                     </Text>
                   </View>
                 )}
@@ -355,12 +356,12 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
 
           {/* Campo: Categoria */}
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Categoria *</Text>
+            <Text style={styles.label}>{t('addItem.category')}</Text>
             <TouchableOpacity
               style={styles.selector}
               onPress={() => setShowCategoryPicker(!showCategoryPicker)}
             >
-              <Text style={styles.selectorText}>{selectedCategory?.name ?? 'Selecionar'}</Text>
+              <Text style={styles.selectorText}>{selectedCategory?.name ?? t('addItem.selectCategory')}</Text>
               <ChevronDown size={16} color={theme.textMuted} />
             </TouchableOpacity>
 
@@ -416,7 +417,7 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
           {/* Campo: Validade (automática ou manual) */}
           <View style={styles.fieldGroup}>
             <View style={styles.switchRow}>
-              <Text style={styles.label}>Estimar validade automaticamente</Text>
+              <Text style={styles.label}>{t('addItem.autoExpiry')}</Text>
               <Switch
                 value={useAutoExpiry}
                 onValueChange={setUseAutoExpiry}
@@ -427,7 +428,7 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
             </View>
             {useAutoExpiry ? (
               <Text style={styles.autoExpiryHint}>
-                O sistema estimará a validade com base na categoria selecionada.
+                {t('addItem.autoExpiryHint')}
               </Text>
             ) : (
               <FormInput
@@ -443,7 +444,7 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
                   }
                   setExpiryInput(masked);
                 }}
-                placeholder="DD/MM/AAAA"
+                placeholder={t('addItem.expiryPlaceholder')}
                 keyboardType="numeric"
                 maxLength={10}
               />
@@ -454,19 +455,19 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
           <View style={[styles.rowFields, { gap: 12 }]}>
             <View style={{ flex: 1 }}>
               <FormInput
-                label="Quantidade *"
+                label={t('addItem.quantity')}
                 value={quantity}
                 onChangeText={setQuantity}
-                placeholder="1"
+                placeholder={t('addItem.quantityPlaceholder')}
                 keyboardType="decimal-pad"
               />
             </View>
             <View style={{ flex: 1.3 }}>
               <FormInput
-                label="Unidade"
+                label={t('addItem.unit')}
                 value={unit}
                 onChangeText={setUnit}
-                placeholder="unidade, kg, litro…"
+                placeholder={t('addItem.unitPlaceholder')}
                 maxLength={30}
               />
             </View>
@@ -474,10 +475,10 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
 
           {/* Campo: Observações */}
           <FormInput
-            label="Observações (opcional)"
+            label={t('addItem.notes')}
             value={notes}
             onChangeText={setNotes}
-            placeholder="Ex: aberto, congelado, marca preferida…"
+            placeholder={t('addItem.notesPlaceholder')}
             multiline
             numberOfLines={3}
             maxLength={500}
@@ -486,7 +487,7 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
           />
 
           <PrimaryButton
-            label={isEditing ? 'Salvar Alterações' : 'Adicionar ao Inventário'}
+            label={isEditing ? t('addItem.saveChanges') : t('addItem.addToInventory')}
             onPress={handleSubmit}
             loading={saving}
             style={styles.submitBtn}

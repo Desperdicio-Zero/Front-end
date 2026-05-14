@@ -41,6 +41,7 @@ import type { AppTheme } from '../contexts/ThemeContext';
 import { scanReceipt, importReceiptItems } from '../services/api';
 import type { ParsedReceiptItem } from '../services/api';
 import PrimaryButton from '../components/PrimaryButton';
+import { useTranslation } from 'react-i18next';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ReceiptScan'>;
 
@@ -51,6 +52,7 @@ type ScreenState = 'choose' | 'scanning' | 'review' | 'importing' | 'done';
 
 const ReceiptScanScreen: React.FC<Props> = ({ navigation }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const s = makeStyles(theme);
 
   const [state, setState] = useState<ScreenState>('choose');
@@ -68,7 +70,7 @@ const ReceiptScanScreen: React.FC<Props> = ({ navigation }) => {
       if (source === 'camera') {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
-          Alert.alert('Permissão negada', 'Precisamos de acesso à câmera.');
+          Alert.alert(t('receiptScan.permission.denied'), t('receiptScan.permission.camera'));
           return;
         }
         result = await ImagePicker.launchCameraAsync({
@@ -78,7 +80,7 @@ const ReceiptScanScreen: React.FC<Props> = ({ navigation }) => {
       } else {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-          Alert.alert('Permissão negada', 'Precisamos de acesso à galeria.');
+          Alert.alert(t('receiptScan.permission.denied'), t('receiptScan.permission.gallery'));
           return;
         }
         result = await ImagePicker.launchImageLibraryAsync({
@@ -96,7 +98,7 @@ const ReceiptScanScreen: React.FC<Props> = ({ navigation }) => {
       }
     } catch (err) {
       console.error('Erro ao capturar imagem:', err);
-      Toast.show({ type: 'error', text1: 'Erro ao acessar câmera/galeria.' });
+      Toast.show({ type: 'error', text1: t('receiptScan.toast.cameraError') });
     }
   };
 
@@ -116,14 +118,14 @@ const ReceiptScanScreen: React.FC<Props> = ({ navigation }) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       
       if (withToggle.length === 0) {
-        Toast.show({ type: 'info', text1: 'Nenhum produto encontrado no cupom.' });
+        Toast.show({ type: 'info', text1: t('receiptScan.toast.noProducts') });
       }
     } catch (err: any) {
       console.error('Erro ao escanear cupom:', err);
       Toast.show({
         type: 'error',
-        text1: 'Falha na leitura',
-        text2: err.response?.data?.detail || 'Não foi possível processar o cupom.',
+        text1: t('receiptScan.toast.readFailed'),
+        text2: err.response?.data?.detail || t('receiptScan.toast.tryAgain'),
       });
       setState('choose');
     }
@@ -135,7 +137,7 @@ const ReceiptScanScreen: React.FC<Props> = ({ navigation }) => {
   const handleImport = async () => {
     const selected = items.filter(i => i.selected);
     if (selected.length === 0) {
-      Toast.show({ type: 'error', text1: 'Selecione ao menos um item.' });
+      Toast.show({ type: 'error', text1: t('receiptScan.toast.selectAtLeast') });
       return;
     }
 
@@ -149,14 +151,14 @@ const ReceiptScanScreen: React.FC<Props> = ({ navigation }) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       Toast.show({
         type: 'success',
-        text1: `${createdCount} ${createdCount === 1 ? 'item importado' : 'itens importados'}!`,
+        text1: t('receiptScan.toast.imported', { count: createdCount }),
       });
     } catch (err: any) {
       console.error('Erro ao importar itens:', err);
       Toast.show({
         type: 'error',
-        text1: 'Falha na importação',
-        text2: err.response?.data?.detail || 'Tente novamente.',
+        text1: t('receiptScan.toast.importFailed'),
+        text2: err.response?.data?.detail || t('receiptScan.toast.tryAgain'),
       });
       setState('review');
     }
@@ -184,10 +186,9 @@ const ReceiptScanScreen: React.FC<Props> = ({ navigation }) => {
       <View style={[s.iconCircle, { backgroundColor: theme.greenBg }]}>
         <FileText size={56} color={theme.green} strokeWidth={1.5} />
       </View>
-      <Text style={[s.mainTitle, { color: theme.text }]}>Importar Nota Fiscal</Text>
+      <Text style={[s.mainTitle, { color: theme.text }]}>{t('receiptScan.choose.title')}</Text>
       <Text style={[s.mainSubtitle, { color: theme.textSecondary }]}>
-        Fotografe ou selecione uma imagem do cupom fiscal do mercado.
-        A IA vai extrair os produtos automaticamente.
+        {t('receiptScan.choose.subtitle')}
       </Text>
 
       <View style={s.buttonRow}>
@@ -200,7 +201,7 @@ const ReceiptScanScreen: React.FC<Props> = ({ navigation }) => {
           onPress={() => pickImage('camera')}
         >
           <Camera size={24} color="#fff" strokeWidth={2} />
-          <Text style={s.sourceBtnText}>Câmera</Text>
+          <Text style={s.sourceBtnText}>{t('receiptScan.choose.camera')}</Text>
         </Pressable>
 
         <Pressable
@@ -212,7 +213,7 @@ const ReceiptScanScreen: React.FC<Props> = ({ navigation }) => {
           onPress={() => pickImage('gallery')}
         >
           <ImageIcon size={24} color={theme.green} strokeWidth={2} />
-          <Text style={[s.sourceBtnText, { color: theme.green }]}>Galeria</Text>
+          <Text style={[s.sourceBtnText, { color: theme.green }]}>{t('receiptScan.choose.gallery')}</Text>
         </Pressable>
       </View>
     </View>
@@ -225,9 +226,9 @@ const ReceiptScanScreen: React.FC<Props> = ({ navigation }) => {
         <Image source={{ uri: imageUri }} style={s.previewImage} resizeMode="contain" />
       )}
       <ActivityIndicator size="large" color={theme.green} style={{ marginTop: 24 }} />
-      <Text style={[s.scanningText, { color: theme.text }]}>Analisando cupom fiscal…</Text>
+      <Text style={[s.scanningText, { color: theme.text }]}>{t('receiptScan.scanning.analyzing')}</Text>
       <Text style={[s.scanningSubtext, { color: theme.textMuted }]}>
-        A inteligência artificial está extraindo os produtos.
+        {t('receiptScan.scanning.aiExtracting')}
       </Text>
     </View>
   );
@@ -237,10 +238,10 @@ const ReceiptScanScreen: React.FC<Props> = ({ navigation }) => {
     <View style={{ flex: 1 }}>
       <View style={s.reviewHeader}>
         <Text style={[s.reviewTitle, { color: theme.text }]}>
-          {items.length} {items.length === 1 ? 'produto encontrado' : 'produtos encontrados'}
+          {t('receiptScan.review.title', { count: items.length })}
         </Text>
         <Text style={[s.reviewSubtitle, { color: theme.textSecondary }]}>
-          Desmarque os itens que não deseja importar.
+          {t('receiptScan.review.subtitle')}
         </Text>
       </View>
 
@@ -286,7 +287,7 @@ const ReceiptScanScreen: React.FC<Props> = ({ navigation }) => {
 
       <View style={s.bottomBar}>
         <PrimaryButton
-          label={`Importar ${selectedCount} ${selectedCount === 1 ? 'item' : 'itens'}`}
+          label={t('receiptScan.review.importBtn', { count: selectedCount })}
           onPress={handleImport}
           disabled={selectedCount === 0}
         />
@@ -298,7 +299,7 @@ const ReceiptScanScreen: React.FC<Props> = ({ navigation }) => {
   const renderImporting = () => (
     <View style={s.centerContainer}>
       <ActivityIndicator size="large" color={theme.green} />
-      <Text style={[s.scanningText, { color: theme.text }]}>Importando itens…</Text>
+      <Text style={[s.scanningText, { color: theme.text }]}>{t('receiptScan.importing')}</Text>
     </View>
   );
 
@@ -308,17 +309,13 @@ const ReceiptScanScreen: React.FC<Props> = ({ navigation }) => {
       <View style={[s.iconCircle, { backgroundColor: theme.greenBg }]}>
         <PackageCheck size={56} color={theme.green} strokeWidth={1.5} />
       </View>
-      <Text style={[s.mainTitle, { color: theme.text }]}>Importação Concluída!</Text>
+      <Text style={[s.mainTitle, { color: theme.text }]}>{t('receiptScan.done.title')}</Text>
       <Text style={[s.mainSubtitle, { color: theme.textSecondary }]}>
-        {importedCount} {importedCount === 1 ? 'produto foi adicionado' : 'produtos foram adicionados'} ao seu inventário.
+        {t('receiptScan.done.subtitle', { count: importedCount })}
       </Text>
+      <PrimaryButton label={t('receiptScan.done.backBtn')} onPress={() => navigation.goBack()} style={{ marginTop: 24, width: '100%' }} />
       <PrimaryButton
-        label="Voltar ao Inventário"
-        onPress={() => navigation.goBack()}
-        style={{ marginTop: 24, width: '100%' }}
-      />
-      <PrimaryButton
-        label="Escanear Outro Cupom"
+        label={t('receiptScan.done.scanAnotherBtn')}
         onPress={() => {
           setState('choose');
           setImageUri(null);
@@ -341,7 +338,7 @@ const ReceiptScanScreen: React.FC<Props> = ({ navigation }) => {
         >
           <ArrowLeft size={22} color={theme.green} strokeWidth={2.5} />
         </TouchableOpacity>
-        <Text style={[s.headerTitle, { color: theme.text }]}>Nota Fiscal</Text>
+        <Text style={[s.headerTitle, { color: theme.text }]}>{t('receiptScan.header')}</Text>
         <View style={{ width: 36 }} />
       </View>
 

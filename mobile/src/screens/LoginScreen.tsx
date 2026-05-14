@@ -25,6 +25,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../App';
 import PrimaryButton from '../components/PrimaryButton';
 import FormInput from '../components/FormInput';
+import { useTranslation } from 'react-i18next';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -37,6 +38,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
     const { theme } = useTheme();
     const { signIn } = useAuth();
+    const { t } = useTranslation();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -67,11 +69,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
     const handleLogin = async () => {
         if (!email || !password) {
-            Toast.show({ type: 'error', text1: 'Preencha todos os campos.' });
+            Toast.show({ type: 'error', text1: t('login.toast.fillAll') });
             return;
         }
         if (!emailValid) {
-            Toast.show({ type: 'error', text1: 'E-mail inválido.' });
+            Toast.show({ type: 'error', text1: t('login.toast.invalidEmail') });
             return;
         }
         setLoading(true);
@@ -79,23 +81,14 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             await healthCheck();
             const { access_token } = await apiLogin(email.trim(), password);
             await signIn(access_token);
-            Toast.show({ type: 'success', text1: 'Login realizado!' });
+            Toast.show({ type: 'success', text1: t('login.toast.success') });
         } catch (error: any) {
-            // Se o health-check falhou, é bem provável que seja rede/BASE_URL.
             const url = String(error?.config?.url ?? '');
             if (url.includes('/health') || !error?.response) {
-                Toast.show({
-                    type: 'error',
-                    text1: 'Servidor indisponível',
-                    text2: 'Verifique o backend e a BASE_URL.',
-                });
+                Toast.show({ type: 'error', text1: t('login.toast.serverUnavailable'), text2: t('login.toast.serverCheck') });
                 return;
             }
-            Toast.show({
-                type: 'error',
-                text1: 'Falha no login',
-                text2: error.response?.data?.detail || 'E-mail ou senha incorretos',
-            });
+            Toast.show({ type: 'error', text1: t('login.toast.loginFailed'), text2: error.response?.data?.detail || t('login.toast.wrongCredentials') });
         } finally {
             setLoading(false);
         }
@@ -130,27 +123,27 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                                     <Leaf size={36} color="#22C55E" strokeWidth={2.5} />
                                 </View>
                             </View>
-                            <Text style={[styles.title, { color: theme.text, fontFamily: theme.fonts.heading }]}>Desperdício Zero</Text>
-                            <Text style={[styles.subtitle, { color: theme.textSecondary, fontFamily: theme.fonts.regular }]}>Gerencie sua despensa de forma inteligente</Text>
+                            <Text style={[styles.title, { color: theme.text, fontFamily: theme.fonts.heading }]}>{t('login.title')}</Text>
+                            <Text style={[styles.subtitle, { color: theme.textSecondary, fontFamily: theme.fonts.regular }]}>{t('login.subtitle')}</Text>
                         </View>
 
                         {/* ── Glassmorphism card ────────────────────────────── */}
                         <View style={[styles.glassCard, { backgroundColor: theme.glassBg, borderColor: theme.glassBorder }]}>
-                            <Text style={[styles.cardTitle, { color: theme.text, fontFamily: theme.fonts.heading }]}>Entrar na sua conta</Text>
+                            <Text style={[styles.cardTitle, { color: theme.text, fontFamily: theme.fonts.heading }]}>{t('login.cardTitle')}</Text>
 
                             <FormInput
-                                label="E-mail"
+                                label={t('login.email')}
                                 value={email}
                                 onChangeText={setEmail}
-                                placeholder="seu@email.com"
+                                placeholder={t('login.emailPlaceholder')}
                                 keyboardType="email-address"
                                 autoCapitalize="none"
                                 valid={emailTouched ? emailValid : undefined}
-                                error={emailTouched && !emailValid ? 'Digite um e-mail válido.' : undefined}
+                                error={emailTouched && !emailValid ? t('login.emailError') : undefined}
                             />
 
                             <FormInput
-                                label="Senha"
+                                label={t('login.password')}
                                 value={password}
                                 onChangeText={setPassword}
                                 placeholder="••••••••"
@@ -158,11 +151,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                             />
 
                             <TouchableOpacity style={styles.forgotBtn}>
-                                <Text style={styles.forgotText}>Esqueceu a senha?</Text>
+                                <Text style={styles.forgotText}>{t('login.forgotPassword')}</Text>
                             </TouchableOpacity>
 
                             <PrimaryButton
-                                label="Entrar"
+                                label={t('login.loginBtn')}
                                 onPress={handleLogin}
                                 loading={loading}
                                 style={styles.btnSpacing}
@@ -170,14 +163,14 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
                             <View style={styles.divider}>
                                 <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
-                                <Text style={[styles.dividerText, { color: theme.textMuted }]}>ou</Text>
+                                <Text style={[styles.dividerText, { color: theme.textMuted }]}>{t('common.or')}</Text>
                                 <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
                             </View>
 
                             <View style={styles.signupContainer}>
-                                <Text style={[styles.signupText, { color: theme.textSecondary }]}>Ainda não tem conta? </Text>
+                                <Text style={[styles.signupText, { color: theme.textSecondary }]}>{t('login.noAccount')}</Text>
                                 <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                                    <Text style={[styles.signupLink, { color: theme.green }]}>Cadastre-se</Text>
+                                    <Text style={[styles.signupLink, { color: theme.green }]}>{t('login.register')}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -185,7 +178,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                         {/* ── Footer branding ───────────────────────────────── */}
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 24, gap: 6 }}>
                             <Leaf size={14} color={theme.textMuted} />
-                            <Text style={[styles.footerText, { color: theme.textMuted, marginTop: 0, fontFamily: theme.fonts.regular }]}>Seguro e criptografado</Text>
+                            <Text style={[styles.footerText, { color: theme.textMuted, marginTop: 0, fontFamily: theme.fonts.regular }]}>{t('login.secure')}</Text>
                         </View>
                     </ScrollView>
                 </KeyboardAvoidingView>

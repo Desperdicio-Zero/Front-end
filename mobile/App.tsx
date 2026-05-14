@@ -5,6 +5,9 @@
  * Stack Navigator, Toasts globais e registro de Push Notifications.
  */
 
+// i18n deve ser o primeiro import para inicializar antes de qualquer tela
+import './src/i18n';
+
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
@@ -27,11 +30,13 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import ReceiptScanScreen from './src/screens/ReceiptScanScreen';
 import DonationScreen from './src/screens/DonationScreen';
 import OnboardingScreen, { hasSeenOnboarding } from './src/screens/OnboardingScreen';
+import EditProfileScreen from './src/screens/EditProfileScreen';
 import type { ScanResult } from './src/screens/ScannerScreen';
 import type { PantryItem } from './src/services/api';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { registerForPushNotificationsAsync } from './src/services/notifications';
+import { useTranslation } from 'react-i18next';
 
 // ---------------------------------------------------------------------------
 // Tipagem do Stack Navigator (garante type-safety nas navegações)
@@ -45,6 +50,7 @@ export type RootStackParamList = {
   ReceiptScan: undefined;
   Donation: { item: PantryItem };
   Onboarding: undefined;
+  EditProfile: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -86,10 +92,7 @@ function AppStack() {
         <Stack.Screen
           name="AddItem"
           component={AddItemScreen}
-          options={({ route }) => ({
-            title: route.params?.itemToEdit ? 'Editar Item' : 'Novo Item',
-            headerBackTitle: 'Voltar',
-          })}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="Scanner"
@@ -120,6 +123,11 @@ function AppStack() {
           name="Onboarding"
           component={OnboardingScreen}
           options={{ headerShown: false, presentation: 'fullScreenModal' }}
+        />
+        <Stack.Screen
+          name="EditProfile"
+          component={EditProfileScreen}
+          options={{ headerShown: false }}
         />
       </Stack.Navigator>
     </>
