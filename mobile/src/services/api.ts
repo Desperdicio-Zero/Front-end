@@ -90,7 +90,7 @@ export function guessCategory(tags: string[]): number {
     if (!normalizedKeyword) continue;
     if (normalized.some((t) => t.includes(normalizedKeyword))) return id;
   }
-  return 13; // Outros
+  return 16; // Outros
 }
 
 export interface Category {
@@ -215,7 +215,7 @@ export interface StatsResponse {
 import { Platform } from 'react-native';
 // ⚠️  TROQUE o IP abaixo pelo IP da sua máquina na rede atual.
 //    Para ver seu IP: abra o PowerShell e rode → ipconfig | findstr "IPv4"
-const MACHINE_IP = '192.168.18.9'; // ← ALTERE AQUI quando mudar de rede
+const MACHINE_IP = '192.168.0.12'; // ← ALTERE AQUI quando mudar de rede
 const DAY_MS = 24 * 60 * 60 * 1000;
 const USE_MOCK_API = false; // ou baseado em env: !process.env.EXPO_PUBLIC_API_URL
 
@@ -759,7 +759,10 @@ const CATEGORY_LABEL_BY_ID: Record<number, string> = {
   10: 'Congelados',
   11: 'Pães e Confeitaria',
   12: 'Ovos',
-  13: 'Outros',
+  13: 'Biscoitos e Snacks',
+  14: 'Frios e Embutidos',
+  15: 'Doces e Chocolates',
+  16: 'Outros',
 };
 
 function normalizeReceiptItem(raw: any): ParsedReceiptItem {
