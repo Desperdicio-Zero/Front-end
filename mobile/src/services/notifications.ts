@@ -2,8 +2,7 @@ import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-import axios from 'axios';
-import { BASE_URL } from './api';
+import { BASE_URL, apiClient } from './api';
 
 // Configura como os alertas devem aparecer se o usuário estiver com o App aberto
 Notifications.setNotificationHandler({
@@ -80,13 +79,14 @@ export async function registerForPushNotificationsAsync() {
     });
   }
 
-  // 3. Cadastra o Token no nosso Backend Python
+  // 3. Cadastra o Token no nosso Backend
+  // O backend espera `{ pushToken: string }` e exige autenticação (middleware).
   if (token) {
     try {
-      await axios.post(`${BASE_URL}/devices/register`, { expo_push_token: token });
+      await apiClient.post('/devices/register', { pushToken: token });
       console.log(`[NOTIF] Aparelho guardado/atualizado na base MySQL`);
     } catch (e) {
-      console.error("[NOTIF] Falha ao informar Token ao Backend MySQL", e);
+      console.error('[NOTIF] Falha ao informar Token ao Backend MySQL', e);
     }
   }
 
