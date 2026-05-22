@@ -27,15 +27,15 @@ import type { PantryItem, RemovalReason, UrgencyStatus } from '../services/api';
 type Palette = { bg: string; border: string; badge: string; text: string; label: string };
 
 const URGENCY_DARK: Record<UrgencyStatus, Palette> = {
-  Verde:    { bg: 'rgba(34,197,94,0.15)',   border: '#4ADE80', badge: '#16A34A', text: '#4ADE80',  label: 'urgency.Verde'   },
-  Amarelo:  { bg: 'rgba(234,179,8,0.15)',   border: '#FACC15', badge: '#B45309', text: '#FDE047',  label: 'urgency.Amarelo'  },
-  Vermelho: { bg: 'rgba(239,68,68,0.18)',   border: '#F87171', badge: '#B91C1C', text: '#FCA5A5',  label: 'urgency.Vermelho'  },
+  Verde:    { bg: 'rgba(34,197,94,0.12)',   border: '#4ADE80', badge: '#16A34A', text: '#4ADE80',  label: 'urgency.Verde'    },
+  Amarelo:  { bg: 'rgba(234,179,8,0.18)',   border: '#FDE047', badge: '#CA8A04', text: '#FDE047',  label: 'urgency.Amarelo'  },
+  Vermelho: { bg: 'rgba(239,68,68,0.22)',   border: '#F87171', badge: '#DC2626', text: '#FECACA',  label: 'urgency.Vermelho' },
 };
 
 const URGENCY_LIGHT: Record<UrgencyStatus, Palette> = {
-  Verde:    { bg: '#F0FDF4', border: '#22C55E', badge: '#16A34A', text: '#15803D', label: 'urgency.Verde'  },
-  Amarelo:  { bg: '#FEFCE8', border: '#EAB308', badge: '#CA8A04', text: '#A16207', label: 'urgency.Amarelo' },
-  Vermelho: { bg: '#FFF1F2', border: '#EF4444', badge: '#DC2626', text: '#B91C1C', label: 'urgency.Vermelho' },
+  Verde:    { bg: '#F0FDF4', border: '#22C55E', badge: '#16A34A', text: '#15803D', label: 'urgency.Verde'    },
+  Amarelo:  { bg: '#FEFCE8', border: '#CA8A04', badge: '#B45309', text: '#854D0E', label: 'urgency.Amarelo'  },
+  Vermelho: { bg: '#FFF1F2', border: '#EF4444', badge: '#DC2626', text: '#991B1B', label: 'urgency.Vermelho' },
 };
 
 // ---------------------------------------------------------------------------
@@ -118,8 +118,14 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ item, onEdit, onDe
         {
           backgroundColor: palette.bg,
           borderLeftColor: palette.border,
-          borderColor: theme.border,
+          borderLeftWidth: item.status_urgencia === 'Vermelho' ? 5 : 4,
+          borderColor: item.status_urgencia === 'Vermelho'
+            ? (theme.isDark ? 'rgba(239,68,68,0.45)' : 'rgba(239,68,68,0.30)')
+            : item.status_urgencia === 'Amarelo'
+              ? (theme.isDark ? 'rgba(234,179,8,0.35)' : 'rgba(202,138,4,0.25)')
+              : theme.border,
           shadowColor: palette.border,
+          shadowOpacity: item.status_urgencia === 'Vermelho' ? 0.35 : 0.20,
         },
       ]}
       onPress={() => onPress?.(item)}
