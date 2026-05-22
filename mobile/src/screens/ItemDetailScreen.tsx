@@ -58,9 +58,9 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ItemDetail'>;
 type Palette = { bg: string; border: string; badge: string; text: string; label: string };
 
 const URGENCY_LIGHT: Record<UrgencyStatus, Palette> = {
-  Verde: { bg: 'rgba(34,197,94,0.1)', border: '#22C55E', badge: '#22C55E', text: '#22C55E', label: 'Em dia' },
-  Amarelo: { bg: 'rgba(234,179,8,0.1)', border: '#EAB308', badge: '#EAB308', text: '#FDE047', label: 'Atenção' },
-  Vermelho: { bg: 'rgba(239,68,68,0.1)', border: '#EF4444', badge: '#EF4444', text: '#FCA5A5', label: 'Urgente' },
+  Verde: { bg: 'rgba(34,197,94,0.1)', border: '#22C55E', badge: '#16A34A', text: '#15803D', label: 'Em dia' },
+  Amarelo: { bg: 'rgba(234,179,8,0.1)', border: '#CA8A04', badge: '#B45309', text: '#854D0E', label: 'Atenção' },
+  Vermelho: { bg: 'rgba(239,68,68,0.1)', border: '#EF4444', badge: '#DC2626', text: '#991B1B', label: 'Urgente' },
 };
 const URGENCY_DARK: Record<UrgencyStatus, Palette> = {
   Verde:    { bg: 'rgba(34,197,94,0.15)',  border: '#4ADE80', badge: '#16A34A', text: '#4ADE80',  label: 'Em dia'  },
@@ -275,7 +275,7 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           {/* Nome */}
           <View style={s.infoRow}>
             <Package size={16} color={palette.text} strokeWidth={2} />
-            <Text style={[s.infoLabel, { color: theme.textMuted }]}>Produto</Text>
+            <Text style={[s.infoLabel, { color: theme.textSecondary }]}>Produto</Text>
             <Text style={[s.infoValue, { color: palette.text }]}>{item.name}</Text>
           </View>
 
@@ -284,7 +284,7 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           {/* Categoria */}
           <View style={s.infoRow}>
             <Tag size={16} color={theme.textSecondary} strokeWidth={2} />
-            <Text style={[s.infoLabel, { color: theme.textMuted }]}>Categoria</Text>
+            <Text style={[s.infoLabel, { color: theme.textSecondary }]}>Categoria</Text>
             <Text style={[s.infoValue, { color: theme.text }]}>{item.category.name}</Text>
           </View>
 
@@ -293,7 +293,7 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           {/* Quantidade */}
           <View style={s.infoRow}>
             <Layers size={16} color={theme.textSecondary} strokeWidth={2} />
-            <Text style={[s.infoLabel, { color: theme.textMuted }]}>Quantidade</Text>
+            <Text style={[s.infoLabel, { color: theme.textSecondary }]}>Quantidade</Text>
             <Text style={[s.infoValue, { color: theme.text }]}>
               {item.quantity} {item.unit}
             </Text>
@@ -304,7 +304,7 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           {/* Validade */}
           <View style={s.infoRow}>
             <Calendar size={16} color={palette.text} strokeWidth={2} />
-            <Text style={[s.infoLabel, { color: theme.textMuted }]}>Validade</Text>
+            <Text style={[s.infoLabel, { color: theme.textSecondary }]}>Validade</Text>
             <View style={s.expiryCol}>
               <Text style={[s.infoValue, { color: palette.text }]}>
                 {formatDate(item.expiry_date)}
@@ -319,8 +319,8 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             <>
               <View style={[s.divider, { backgroundColor: theme.borderLight }]} />
               <View style={s.notesBox}>
-                <Text style={[s.notesLabel, { color: theme.textMuted }]}>Observações</Text>
-                <Text style={[s.notesText, { color: theme.textSecondary }]}>{item.notes}</Text>
+                <Text style={[s.notesLabel, { color: theme.textSecondary }]}>Observações</Text>
+                <Text style={[s.notesText, { color: theme.text }]}>{item.notes}</Text>
               </View>
             </>
           ) : null}

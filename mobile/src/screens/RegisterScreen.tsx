@@ -105,8 +105,8 @@ const RegisterScreen = ({ navigation }: any) => {
                 >
                     <ScrollView
                         contentContainerStyle={styles.content}
-                        keyboardShouldPersistTaps="always"
-                        keyboardDismissMode="none"
+                        keyboardShouldPersistTaps="handled"
+                        keyboardDismissMode="on-drag"
                         showsVerticalScrollIndicator={false}
                         bounces={false}
                     >

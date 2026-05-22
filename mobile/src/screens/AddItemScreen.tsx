@@ -18,10 +18,12 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Check, ChevronDown, FileText, ScanLine } from 'lucide-react-native';
+import { Check, ChevronDown, FileText, ScanLine, ArrowLeft, Calendar } from 'lucide-react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 import { useInventory } from '../hooks/useInventory';
 import { useTheme } from '../contexts/ThemeContext';
@@ -115,6 +117,8 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
   const [unit, setUnit] = useState('unidade');
   const [notes, setNotes] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [date, setDate] = useState(new Date());
 
   // -- Estado do Autocomplete (Catálogo) -------------------------------------
   const [searchResults, setSearchResults] = useState<CatalogProductOut[]>([]);
@@ -164,8 +168,13 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
       setName(itemToEdit.name);
       setCategoryId(itemToEdit.category_id);
       setUseAutoExpiry(itemToEdit.expiry_estimated);
-      if (!itemToEdit.expiry_estimated) {
-        setExpiryInput(toDisplayDate(itemToEdit.expiry_date));
+      if (!itemToEdit.expiry_estimated && itemToEdit.expiry_date) {
+        const display = toDisplayDate(itemToEdit.expiry_date);
+        setExpiryInput(display);
+        const parsed = new Date(itemToEdit.expiry_date);
+        if (!isNaN(parsed.getTime())) {
+          setDate(parsed);
+        }
       }
       setQuantity(String(itemToEdit.quantity));
       setUnit(itemToEdit.unit);
@@ -186,6 +195,43 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
       setShowCategoryPicker(true);
     }
   }, [route.params?.scanResult]);
+
+  // -- Funções do DatePicker -------------------------------------------------
+  const handleOpenDatePicker = () => {
+    let currentVal = date;
+    if (expiryInput) {
+      const match = expiryInput.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (match) {
+        const [, day, month, year] = match;
+        const parsed = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        if (!isNaN(parsed.getTime())) {
+          currentVal = parsed;
+          setDate(parsed);
+        }
+      }
+    } else {
+      currentVal = new Date();
+      setDate(currentVal);
+      const day = String(currentVal.getDate()).padStart(2, '0');
+      const month = String(currentVal.getMonth() + 1).padStart(2, '0');
+      const year = currentVal.getFullYear();
+      setExpiryInput(`${day}/${month}/${year}`);
+    }
+    setShowDatePicker(true);
+  };
+
+  const onChangeDate = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (selectedDate) {
+      setDate(selectedDate);
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const year = selectedDate.getFullYear();
+      setExpiryInput(`${day}/${month}/${year}`);
+    }
+  };
 
   // -- Abrir scanner --------------------------------------------------------
   const handleOpenScanner = () => {
@@ -259,15 +305,28 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
       >
         <ScrollView
           contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="always"
-          keyboardDismissMode="none"
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
-          {/* Título */}
-          <Text style={[styles.screenTitle, { fontFamily: theme.fonts?.heading }]}>
-            {isEditing ? t('addItem.titleEdit') : t('addItem.titleNew')}
-          </Text>
+          {/* Título com botão Voltar */}
+          <View style={styles.headerRow}>
+            <TouchableOpacity
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                navigation.goBack();
+              }}
+              style={styles.backBtn}
+              accessibilityLabel="Voltar para despensa"
+              accessibilityRole="button"
+            >
+              <ArrowLeft size={24} color={theme.text} strokeWidth={2.5} />
+            </TouchableOpacity>
+            <Text style={[styles.screenTitle, { fontFamily: theme.fonts?.heading }]} numberOfLines={1}>
+              {isEditing ? t('addItem.titleEdit') : t('addItem.titleNew')}
+            </Text>
+          </View>
 
           {/* Botão de importar nota fiscal */}
           {!isEditing && (
@@ -431,23 +490,17 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
                 {t('addItem.autoExpiryHint')}
               </Text>
             ) : (
-              <FormInput
-                label=""
-                value={expiryInput}
-                onChangeText={(t) => {
-                  const digits = t.replace(/\D/g, '').slice(0, 8);
-                  let masked = digits;
-                  if (digits.length > 4) {
-                    masked = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-                  } else if (digits.length > 2) {
-                    masked = `${digits.slice(0, 2)}/${digits.slice(2)}`;
-                  }
-                  setExpiryInput(masked);
-                }}
-                placeholder={t('addItem.expiryPlaceholder')}
-                keyboardType="numeric"
-                maxLength={10}
-              />
+              <TouchableOpacity
+                style={styles.selector}
+                onPress={handleOpenDatePicker}
+                activeOpacity={0.7}
+                accessibilityLabel="Selecionar data de vencimento no calendário"
+              >
+                <Text style={[styles.selectorText, !expiryInput && { color: theme.textMuted }]}>
+                  {expiryInput ? expiryInput : t('addItem.expiryPlaceholder')}
+                </Text>
+                <Calendar size={18} color={theme.textMuted} />
+              </TouchableOpacity>
             )}
           </View>
 
@@ -492,6 +545,46 @@ const AddItemScreen: React.FC<Props> = ({ route, navigation }) => {
             loading={saving}
             style={styles.submitBtn}
           />
+
+          {Platform.OS === 'ios' ? (
+            <Modal
+              visible={showDatePicker}
+              transparent={true}
+              animationType="slide"
+            >
+              <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                  <View style={styles.modalHeader}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                        setShowDatePicker(false);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.modalCloseText}>{t('common.confirm')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <DateTimePicker
+                    value={date}
+                    mode="date"
+                    display="spinner"
+                    onChange={onChangeDate}
+                    textColor={theme.text}
+                  />
+                </View>
+              </View>
+            </Modal>
+          ) : (
+            showDatePicker && (
+              <DateTimePicker
+                value={date}
+                mode="date"
+                display="default"
+                onChange={onChangeDate}
+              />
+            )
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -511,12 +604,24 @@ function makeStyles(_theme: AppTheme) {
       padding: 20,
       paddingBottom: 40,
     },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginBottom: 24,
+    },
+    backBtn: {
+      padding: 8,
+      marginLeft: -8,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
     screenTitle: {
       fontSize: 24,
       fontWeight: '800',
       color: _theme.text,
-      marginBottom: 24,
       letterSpacing: -0.5,
+      flex: 1,
     },
     fieldGroup: {
       marginBottom: 18,
@@ -688,6 +793,30 @@ function makeStyles(_theme: AppTheme) {
     },
     receiptBtnSubtitle: {
       fontSize: 12,
+    },
+
+    modalOverlay: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+      backgroundColor: _theme.modalBg,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      padding: 20,
+      paddingBottom: 40,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      marginBottom: 12,
+    },
+    modalCloseText: {
+      color: _theme.green,
+      fontSize: 16,
+      fontWeight: '600',
+      fontFamily: _theme.fonts?.bold,
     },
   });
 }
