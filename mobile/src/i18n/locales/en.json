@@ -1,22 +1,8 @@
 {
   "common": {
     "cancel": "Cancel",
-    "save": "Save",
-    "back": "Back",
-    "close": "Close",
-    "error": "Error",
-    "ok": "OK",
     "or": "or",
-    "loading": "Loading...",
-    "retry": "Try again",
-    "confirm": "Confirm",
     "delete": "Remove",
-    "edit": "Edit",
-    "add": "Add",
-    "search": "Search",
-    "noResults": "No results",
-    "item_one": "item",
-    "item_other": "items",
     "unit_one": "unit",
     "unit_other": "units"
   },
@@ -264,6 +250,7 @@
       "historical": "Historical total",
       "overview": "Waste Overview",
       "topCategories": "Most wasted categories",
+      "insights": "Smart Insights",
       "recentRemovals": "Recent removals"
     },
     "metrics": {
@@ -271,6 +258,24 @@
       "expired": "Expired",
       "discarded": "Discarded",
       "total": "total"
+    },
+    "categories": {
+      "topCritical": "Most critical category: {{category}}",
+      "topCriticalDetail": "{{count}} discards • {{share}}% share",
+      "context": "{{share}}% of waste • {{delta}} vs last month"
+    },
+    "insights": {
+      "none": "There is not enough data yet to generate insights.",
+      "concentrationTitle": "Waste is concentrated",
+      "concentrationText": "Your waste is concentrated in just {{count}} categories.",
+      "categoryTitle": "Highlighted category",
+      "categoryText": "{{category}} remains one of the top discard categories ({{share}}%).",
+      "utilizationTitle": "Utilization is improving",
+      "utilizationText": "Your utilization improved by {{delta}} pp compared to last month.",
+      "warningTitle": "Heads up",
+      "warningText": "You discarded more than you consumed this month. It may be worth checking what expires first.",
+      "consumedTitle": "Good consumption signal",
+      "consumedText": "Most removed items were consumed successfully ({{percent}}%)."
     },
     "empty": {
       "title": "No history yet",
