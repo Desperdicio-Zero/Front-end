@@ -25,6 +25,7 @@ import DashboardScreen from './src/screens/DashboardScreen';
 import AddItemScreen from './src/screens/AddItemScreen';
 import ScannerScreen from './src/screens/ScannerScreen';
 import StatsScreen from './src/screens/StatsScreen';
+import DonationReportScreen from './src/screens/DonationReportScreen';
 import ItemDetailScreen from './src/screens/ItemDetailScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import ReceiptScanScreen from './src/screens/ReceiptScanScreen';
@@ -46,6 +47,7 @@ export type RootStackParamList = {
   AddItem: { itemToEdit?: PantryItem; scanResult?: ScanResult };
   Scanner: undefined;
   Stats: undefined;
+  DonationReport: undefined;
   ItemDetail: { item: PantryItem };
   ReceiptScan: undefined;
   Donation: { item: PantryItem };
@@ -102,6 +104,11 @@ function AppStack() {
         <Stack.Screen
           name="Stats"
           component={StatsScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="DonationReport"
+          component={DonationReportScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen

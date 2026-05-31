@@ -290,6 +290,34 @@
       "consumedTitle": "Bom sinal no consumo",
       "consumedText": "A maioria dos itens removidos foi consumida com sucesso ({{percent}}%)."
     },
+    "donationReport": {
+      "insights": {
+        "increase": {
+          "title": "Doações em alta",
+          "text": "Você realizou {{delta}} doação(ões) a mais neste mês em relação ao anterior."
+        },
+        "steady": {
+          "title": "Ritmo consistente",
+          "text": "Você manteve o mesmo ritmo de doações do mês anterior — ótima consistência."
+        },
+        "opportunity": {
+          "title": "Impacto em evolução",
+          "text": "Seu histórico já mostra uma contribuição que continua crescendo."
+        },
+        "topCategory": {
+          "title": "Categoria em destaque",
+          "text": "{{category}} concentra {{share}}% do total de itens doados."
+        },
+        "diversity": {
+          "title": "Diversidade de categorias",
+          "text": "Você contribuiu com {{count}} categorias diferentes, ampliando a diversidade do seu impacto."
+        },
+        "concentration": {
+          "title": "Diversidade que fortalece",
+          "text": "Suas doações alcançam diferentes categorias e ampliam o impacto positivo."
+        }
+      }
+    },
     "empty": {
       "title": "Sem histórico ainda",
       "subtitle": "Quando você remover itens da despensa, as estatísticas de consumo e desperdício aparecerão aqui."
