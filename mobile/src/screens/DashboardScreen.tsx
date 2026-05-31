@@ -155,7 +155,7 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (loadingRecipe) {
       interval = setInterval(() => {
         setLoadingPhraseIndex((prev) => (prev + 1) % FUN_LOADING_PHRASES.length);
@@ -632,6 +632,20 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
                 <BarChart2 size={20} color={theme.green} />
               </View>
               <Text style={[styles.bottomSheetItemText, { color: theme.text }]}>Relatório de Desperdício</Text>
+              <ChevronRight size={16} color={theme.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.bottomSheetItem}
+              onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('DonationReport');
+              }}
+            >
+              <View style={[styles.bottomSheetIconWrap, { backgroundColor: theme.greenBg }]}>
+                <Heart size={20} color={theme.green} />
+              </View>
+              <Text style={[styles.bottomSheetItemText, { color: theme.text }]}>Relatório de Doações</Text>
               <ChevronRight size={16} color={theme.textMuted} />
             </TouchableOpacity>
 

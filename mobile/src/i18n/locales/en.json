@@ -264,6 +264,7 @@
       "historical": "Historical total",
       "overview": "Waste Overview",
       "topCategories": "Most wasted categories",
+      "insights": "Smart Insights",
       "recentRemovals": "Recent removals"
     },
     "metrics": {
@@ -271,6 +272,52 @@
       "expired": "Expired",
       "discarded": "Discarded",
       "total": "total"
+    },
+    "categories": {
+      "topCritical": "Most critical category: {{category}}",
+      "topCriticalDetail": "{{count}} discards • {{share}}% share",
+      "context": "{{share}}% of waste • {{delta}} vs last month"
+    },
+    "insights": {
+      "none": "There is not enough data yet to generate insights.",
+      "concentrationTitle": "Waste is concentrated",
+      "concentrationText": "Your waste is concentrated in just {{count}} categories.",
+      "categoryTitle": "Highlighted category",
+      "categoryText": "{{category}} remains one of the top discard categories ({{share}}%).",
+      "utilizationTitle": "Utilization is improving",
+      "utilizationText": "Your utilization improved by {{delta}} pp compared to last month.",
+      "warningTitle": "Heads up",
+      "warningText": "You discarded more than you consumed this month. It may be worth checking what expires first.",
+      "consumedTitle": "Good consumption signal",
+      "consumedText": "Most removed items were consumed successfully ({{percent}}%)."
+    },
+    "donationReport": {
+      "insights": {
+        "increase": {
+          "title": "Donations on the rise",
+          "text": "You made {{delta}} more donation(s) this month compared to the previous one."
+        },
+        "steady": {
+          "title": "Steady rhythm",
+          "text": "You kept the same donation pace as last month — great consistency."
+        },
+        "opportunity": {
+          "title": "Impact in motion",
+          "text": "Your history already shows a contribution that keeps growing."
+        },
+        "topCategory": {
+          "title": "Top category",
+          "text": "{{category}} accounts for {{share}}% of the total donated items."
+        },
+        "diversity": {
+          "title": "Category diversity",
+          "text": "You contributed across {{count}} different categories, increasing the diversity of your impact."
+        },
+        "concentration": {
+          "title": "Diversity that strengthens",
+          "text": "Your donations reach different categories and expand positive impact."
+        }
+      }
     },
     "empty": {
       "title": "No history yet",

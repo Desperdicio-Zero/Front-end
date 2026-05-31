@@ -95,6 +95,51 @@ const cardStyles = StyleSheet.create({
   },
 });
 
+type RangeSummary = {
+  total: number;
+  consumed: number;
+  expired: number;
+  utilizationRate: number;
+  wasteRate: number;
+  categoryCounts: Map<string, number>;
+};
+
+function getMonthBounds(reference: Date) {
+  const start = new Date(reference.getFullYear(), reference.getMonth(), 1);
+  const end = new Date(reference.getFullYear(), reference.getMonth() + 1, 0, 23, 59, 59, 999);
+  return { start, end };
+}
+
+function summarizeHistory(entries: ItemHistoryOut[]): RangeSummary {
+  let consumed = 0;
+  let expired = 0;
+  const categoryCounts = new Map<string, number>();
+
+  for (const entry of entries) {
+    if (entry.removal_reason === 'consumed') consumed += 1;
+    if (entry.removal_reason === 'expired') expired += 1;
+
+    if (entry.removal_reason === 'expired') {
+      categoryCounts.set(entry.category_name, (categoryCounts.get(entry.category_name) ?? 0) + 1);
+    }
+  }
+
+  const total = consumed + expired;
+  return {
+    total,
+    consumed,
+    expired,
+    utilizationRate: total > 0 ? Number(((consumed / total) * 100).toFixed(1)) : 0,
+    wasteRate: total > 0 ? Number(((expired / total) * 100).toFixed(1)) : 0,
+    categoryCounts,
+  };
+}
+
+function formatDelta(value: number) {
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${value}`;
+}
+
 // ---------------------------------------------------------------------------
 // Tela principal
 // ---------------------------------------------------------------------------
@@ -124,7 +169,7 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
       setError(null);
       const [statsData, timelineData] = await Promise.all([
         fetchStats(),
-        fetchHistoryTimeline(12, 0).catch(() => []),
+        fetchHistoryTimeline(200, 0).catch(() => []),
       ]);
       setStats(statsData);
       setTimeline(timelineData);
@@ -144,6 +189,84 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
     load();
   };
 
+  const isEmpty = !stats || stats.total_removed === 0;
+  const now = new Date();
+  const currentMonthBounds = getMonthBounds(now);
+  const previousMonthBounds = getMonthBounds(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+  const currentMonthEntries = timeline.filter((entry) => {
+    const removedAt = new Date(entry.removed_at);
+    return removedAt >= currentMonthBounds.start && removedAt <= currentMonthBounds.end;
+  });
+  const previousMonthEntries = timeline.filter((entry) => {
+    const removedAt = new Date(entry.removed_at);
+    return removedAt >= previousMonthBounds.start && removedAt <= previousMonthBounds.end;
+  });
+  const currentMonthSummary = summarizeHistory(currentMonthEntries);
+  const previousMonthSummary = summarizeHistory(previousMonthEntries);
+  const monthUtilizationDelta = Number((currentMonthSummary.utilizationRate - previousMonthSummary.utilizationRate).toFixed(1));
+  const currentMonthCategories = [...currentMonthSummary.categoryCounts.entries()]
+    .map(([category_name, total_expired]) => ({ category_name, total_expired }))
+    .sort((left, right) => right.total_expired - left.total_expired);
+  const categoryChartRows = currentMonthCategories.length > 0 ? currentMonthCategories : (stats?.top_wasted_categories ?? []);
+  const categoryTotal = categoryChartRows.reduce((sum, item) => sum + item.total_expired, 0);
+  const topCategory = categoryChartRows[0] ?? null;
+  const insights = (() => {
+    const items: Array<{ key: string; title: string; text: string; tone: 'good' | 'info' | 'warning' }> = [];
+
+    if (currentMonthSummary.total > 0) {
+      if (currentMonthCategories.length > 0 && currentMonthCategories.length <= 2) {
+        items.push({
+          key: 'concentration',
+          title: t('stats.insights.concentrationTitle'),
+          text: t('stats.insights.concentrationText', { count: currentMonthCategories.length }),
+          tone: 'info',
+        });
+      }
+
+      if (topCategory) {
+        items.push({
+          key: 'category',
+          title: t('stats.insights.categoryTitle'),
+          text: t('stats.insights.categoryText', {
+            category: topCategory.category_name,
+            share: categoryTotal > 0 ? Number(((topCategory.total_expired / categoryTotal) * 100).toFixed(0)) : 0,
+          }),
+          tone: 'warning',
+        });
+      }
+
+      if (previousMonthSummary.total > 0 && monthUtilizationDelta >= 0) {
+        items.push({
+          key: 'utilization',
+          title: t('stats.insights.utilizationTitle'),
+          text: t('stats.insights.utilizationText', { delta: Math.abs(monthUtilizationDelta).toFixed(1) }),
+          tone: 'good',
+        });
+      }
+
+      if (currentMonthSummary.expired > currentMonthSummary.consumed) {
+        items.push({
+          key: 'warning',
+          title: t('stats.insights.warningTitle'),
+          text: t('stats.insights.warningText'),
+          tone: 'warning',
+        });
+      } else {
+        items.push({
+          key: 'consumed',
+          title: t('stats.insights.consumedTitle'),
+          text: t('stats.insights.consumedText', { percent: currentMonthSummary.utilizationRate.toFixed(0) }),
+          tone: 'good',
+        });
+      }
+    }
+
+    return items.slice(0, 3);
+  })();
+  const utilizationRate = stats ? (100 - stats.waste_rate_percent).toFixed(0) : '0';
+  const isGoodRate = stats ? stats.waste_rate_percent <= 30 : true;
+  const rateColor = isGoodRate ? theme.green : '#EF4444';
+
   // -- Loading ---------------------------------------------------------------
   if (loading) {
     return (
@@ -158,11 +281,6 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
       </SafeAreaView>
     );
   }
-
-  const isEmpty = !stats || stats.total_removed === 0;
-  const utilizationRate = stats ? (100 - stats.waste_rate_percent).toFixed(0) : '0';
-  const isGoodRate = stats ? stats.waste_rate_percent <= 30 : true;
-  const rateColor = isGoodRate ? theme.green : '#EF4444';
 
   const screenWidth = Dimensions.get('window').width;
 
@@ -276,7 +394,6 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
             <MetricCard
               label={t('stats.metrics.consumed')}
               value={stats!.total_consumed}
-              sub={t('stats.metrics.total')}
               color={theme.green}
               bgColor={theme.isDark ? 'rgba(34,197,94,0.15)' : '#DCFCE7'}
               icon={<TrendingUp size={18} color={theme.green} strokeWidth={2.5} />}
@@ -285,7 +402,6 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
             <MetricCard
               label={t('stats.metrics.expired')}
               value={stats!.total_expired}
-              sub={t('stats.metrics.total')}
               color="#EF4444"
               bgColor={theme.isDark ? 'rgba(239,68,68,0.15)' : '#FEE2E2'}
               icon={<TrendingDown size={18} color="#EF4444" strokeWidth={2.5} />}
@@ -329,10 +445,23 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
             <>
               <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{t('stats.sections.topCategories')}</Text>
               <View style={[styles.chartCard, { paddingRight: 32, backgroundColor: theme.headerBg, borderColor: theme.border }]}>
+                {topCategory && (
+                  <View style={[styles.topCategoryBanner, { backgroundColor: theme.isDark ? 'rgba(239,68,68,0.1)' : '#FEF2F2', borderColor: theme.isDark ? 'rgba(239,68,68,0.22)' : '#FECACA' }]}>
+                    <Text style={[styles.topCategoryTitle, { color: theme.text, fontFamily: theme.fonts?.medium }]} numberOfLines={1}>
+                      {t('stats.categories.topCritical', { category: topCategory.category_name })}
+                    </Text>
+                    <Text style={[styles.topCategorySub, { color: theme.textSecondary, fontFamily: theme.fonts?.regular }]}>
+                      {t('stats.categories.topCriticalDetail', {
+                        share: categoryTotal > 0 ? Number(((topCategory.total_expired / categoryTotal) * 100).toFixed(0)) : 0,
+                        count: topCategory.total_expired,
+                      })}
+                    </Text>
+                  </View>
+                )}
                 <BarChart
                   data={{
-                    labels: stats!.top_wasted_categories.slice(0, 3).map(c => c.category_name.substring(0, 8)),
-                    datasets: [{ data: stats!.top_wasted_categories.slice(0, 3).map(c => c.total_expired) }],
+                    labels: categoryChartRows.slice(0, 3).map(c => c.category_name.substring(0, 10)),
+                    datasets: [{ data: categoryChartRows.slice(0, 3).map(c => c.total_expired) }],
                   }}
                   width={screenWidth - 64}
                   height={220}
@@ -359,6 +488,22 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
             </>
           )}
 
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{t('stats.sections.insights')}</Text>
+          <View style={styles.insightGrid}>
+            {insights.length > 0 ? insights.map((insight) => (
+              <View key={insight.key} style={[styles.insightCard, { backgroundColor: theme.headerBg, borderColor: theme.border }]}>
+                <Text style={[styles.insightTitle, { color: theme.text, fontFamily: theme.fonts?.medium }]}>{insight.title}</Text>
+                <Text style={[styles.insightText, { color: theme.textSecondary, fontFamily: theme.fonts?.regular }]}>{insight.text}</Text>
+              </View>
+            )) : (
+              <View style={[styles.insightCard, { backgroundColor: theme.headerBg, borderColor: theme.border }]}>
+                <Text style={[styles.insightText, { color: theme.textSecondary, fontFamily: theme.fonts?.regular }]}>
+                  {t('stats.insights.none')}
+                </Text>
+              </View>
+            )}
+          </View>
+
           {/* ── Timeline (GET /history/) ───────────────────────────────── */}
           <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{t('stats.sections.recentRemovals')}</Text>
           <View style={[styles.chartCard, { backgroundColor: theme.headerBg, borderColor: theme.border, paddingVertical: 8 }]}>
@@ -379,16 +524,40 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
                   borderBottomColor: theme.borderLight,
                 }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: theme.text, fontSize: 13, fontWeight: '700' }} numberOfLines={1}>
-                      {h.item_name}
-                    </Text>
-                    <Text style={{ color: theme.textMuted, fontSize: 12 }} numberOfLines={1}>
-                      {reasonLabel(h.removal_reason)} • {h.quantity} {h.unit}
+                    <View style={styles.historyHeaderRow}>
+                      <Text style={[styles.historyItemName, { color: theme.text }]} numberOfLines={1}>
+                        {h.item_name}
+                      </Text>
+                      {(() => {
+                        const isConsumed = h.removal_reason === 'consumed';
+                        const isDonated = h.removal_reason === 'donated';
+                        const badgeBackground = isConsumed
+                          ? (theme.isDark ? 'rgba(34,197,94,0.16)' : '#DCFCE7')
+                          : isDonated
+                            ? (theme.isDark ? 'rgba(168,85,247,0.16)' : '#F3E8FF')
+                            : (theme.isDark ? 'rgba(239,68,68,0.16)' : '#FEE2E2');
+                        const badgeColor = isConsumed
+                          ? theme.green
+                          : isDonated
+                            ? '#8B5CF6'
+                            : '#EF4444';
+
+                        return (
+                      <View style={[
+                        styles.reasonBadge,
+                        { backgroundColor: badgeBackground },
+                      ]}>
+                        <Text style={[styles.reasonBadgeText, { color: badgeColor, fontFamily: theme.fonts?.medium }]}>
+                          {reasonLabel(h.removal_reason)}
+                        </Text>
+                      </View>
+                        );
+                      })()}
+                    </View>
+                    <Text style={[styles.historyMeta, { color: theme.textMuted }]} numberOfLines={1}>
+                      {h.quantity} {h.unit} • {formatRemovedAt(h.removed_at)}
                     </Text>
                   </View>
-                  <Text style={{ color: theme.textMuted, fontSize: 12, flexShrink: 0 }}>
-                    {formatRemovedAt(h.removed_at)}
-                  </Text>
                 </View>
               ))
             )}
@@ -579,6 +748,63 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 6,
+  },
+  topCategoryBanner: {
+    width: '100%',
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
+    gap: 2,
+  },
+  topCategoryTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  topCategorySub: {
+    fontSize: 11,
+  },
+  insightGrid: {
+    gap: 10,
+  },
+  insightCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    gap: 4,
+  },
+  insightTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  insightText: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  historyHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 2,
+  },
+  historyItemName: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  reasonBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  reasonBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  historyMeta: {
+    fontSize: 12,
   },
   // Empty state
   emptyContainer: {
