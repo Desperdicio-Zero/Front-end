@@ -1,8 +1,22 @@
 {
   "common": {
     "cancel": "Cancel",
+    "save": "Save",
+    "back": "Back",
+    "close": "Close",
+    "error": "Error",
+    "ok": "OK",
     "or": "or",
+    "loading": "Loading...",
+    "retry": "Try again",
+    "confirm": "Confirm",
     "delete": "Remove",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "noResults": "No results",
+    "item_one": "item",
+    "item_other": "items",
     "unit_one": "unit",
     "unit_other": "units"
   },
