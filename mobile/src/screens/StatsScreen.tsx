@@ -528,14 +528,31 @@ const StatsScreen: React.FC<Props> = ({ navigation }) => {
                       <Text style={[styles.historyItemName, { color: theme.text }]} numberOfLines={1}>
                         {h.item_name}
                       </Text>
+                      {(() => {
+                        const isConsumed = h.removal_reason === 'consumed';
+                        const isDonated = h.removal_reason === 'donated';
+                        const badgeBackground = isConsumed
+                          ? (theme.isDark ? 'rgba(34,197,94,0.16)' : '#DCFCE7')
+                          : isDonated
+                            ? (theme.isDark ? 'rgba(168,85,247,0.16)' : '#F3E8FF')
+                            : (theme.isDark ? 'rgba(239,68,68,0.16)' : '#FEE2E2');
+                        const badgeColor = isConsumed
+                          ? theme.green
+                          : isDonated
+                            ? '#8B5CF6'
+                            : '#EF4444';
+
+                        return (
                       <View style={[
                         styles.reasonBadge,
-                        { backgroundColor: h.removal_reason === 'consumed' ? (theme.isDark ? 'rgba(34,197,94,0.16)' : '#DCFCE7') : (theme.isDark ? 'rgba(239,68,68,0.16)' : '#FEE2E2') },
+                        { backgroundColor: badgeBackground },
                       ]}>
-                        <Text style={[styles.reasonBadgeText, { color: h.removal_reason === 'consumed' ? theme.green : '#EF4444', fontFamily: theme.fonts?.medium }]}>
+                        <Text style={[styles.reasonBadgeText, { color: badgeColor, fontFamily: theme.fonts?.medium }]}>
                           {reasonLabel(h.removal_reason)}
                         </Text>
                       </View>
+                        );
+                      })()}
                     </View>
                     <Text style={[styles.historyMeta, { color: theme.textMuted }]} numberOfLines={1}>
                       {h.quantity} {h.unit} • {formatRemovedAt(h.removed_at)}

@@ -461,8 +461,8 @@ const DonationReportScreen: React.FC<Props> = ({ navigation }) => {
               <View style={{ flex: 1 }}>
                 <View style={styles.historyHeaderRow}>
                   <Text style={[styles.historyItemName, { color: theme.text }]} numberOfLines={1}>{entry.item_name}</Text>
-                  <View style={[styles.reasonBadge, { backgroundColor: theme.isDark ? 'rgba(34,197,94,0.16)' : '#DCFCE7' }]}> 
-                    <Text style={[styles.reasonBadgeText, { color: theme.green, fontFamily: theme.fonts?.medium }]}>✓ Doado</Text>
+                  <View style={[styles.reasonBadge, { backgroundColor: theme.isDark ? 'rgba(168,85,247,0.16)' : '#F3E8FF' }]}> 
+                    <Text style={[styles.reasonBadgeText, { color: CARD_ACCENTS.purple.color, fontFamily: theme.fonts?.medium }]}>✓ Doado</Text>
                   </View>
                 </View>
                 <Text style={[styles.historyMeta, { color: theme.textMuted }]} numberOfLines={1}>
